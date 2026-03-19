@@ -2115,7 +2115,7 @@ function renderArrows() {
       outConns.forEach(outConn => {
         const toPh = getPhaseIdx(outConn.to);
         if (fromPh === -1 || toPh === -1 || fromPh === toPh) return;
-        const lineX = gate.x + 64 + 80;
+        const lineX = gate.x + 64 + 40;
         const ph = PHASES[toPh];
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.classList.add('phase-divider');
