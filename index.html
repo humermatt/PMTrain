@@ -1103,9 +1103,193 @@
   </div>
 </div>
 
-<script>
-// ── BUSINESS CASE ID (shared with business-case.html) ──
-const BC_ID = '00000000-0000-0000-0000-000000000001';
+<script type="module">
+// ── SUPABASE ──
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── IDs (shared with business-case.html) ──
+const BC_ID      = '00000000-0000-0000-0000-000000000001';
+const GRAPH_ID   = BC_ID; // reuse same project ID as the key
+
+// ── SAVE DEBOUNCE ──
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveGraph, 800);
+}
+
+async function saveGraph() {
+  const payload = {
+    project_id:     GRAPH_ID,
+    nodes:          JSON.stringify(nodes),
+    gates:          JSON.stringify(gates),
+    connections:    JSON.stringify(connections),
+    project_starts: JSON.stringify(projectStarts),
+    project_ends:   JSON.stringify(projectEnds),
+    pan_x:          panX,
+    pan_y:          panY,
+    scale:          scale,
+    updated_at:     new Date().toISOString(),
+  };
+  const { error } = await sb
+    .from('graph_states')
+    .upsert({ id: GRAPH_ID, ...payload }, { onConflict: 'id' });
+  if (error) console.error('Graph save failed:', JSON.stringify(error));
+}
+
+async function loadGraph() {
+  // Ensure a row exists
+  await sb.from('graph_states')
+    .upsert({ id: GRAPH_ID, project_id: GRAPH_ID }, { onConflict: 'id', ignoreDuplicates: true });
+
+  const { data, error } = await sb
+    .from('graph_states')
+    .select('*')
+    .eq('id', GRAPH_ID)
+    .single();
+
+  if (error || !data) { init(); return; }
+
+  const savedNodes   = JSON.parse(data.nodes   || '[]');
+  const savedGates   = JSON.parse(data.gates   || '[]');
+  const savedConns   = JSON.parse(data.connections || '[]');
+  const savedStarts  = JSON.parse(data.project_starts || '[]');
+  const savedEnds    = JSON.parse(data.project_ends   || '[]');
+
+  // If nothing has been saved yet, run default init
+  if (!savedNodes.length && !savedGates.length && !savedStarts.length) {
+    init();
+    return;
+  }
+
+  // Restore pan/zoom
+  panX = data.pan_x ?? 40;
+  panY = data.pan_y ?? 40;
+  scale = data.scale ?? 1;
+  applyTransform();
+
+  // Restore project starts
+  savedStarts.forEach(st => {
+    projectStartCounter = Math.max(projectStartCounter, st.id);
+    projectStarts.push(st);
+    const el = document.createElement('div');
+    el.className = 'project-start'; el.id = 'start-' + st.id;
+    el.style.left = st.x + 'px'; el.style.top = st.y + 'px';
+    el.innerHTML = `
+      <div class="project-start-label">Initiate<br>Project</div>
+      <div class="project-start-icon" id="start-icon-${st.id}">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          ${st.initiated
+            ? '<polyline points="20 6 9 17 4 12"/>'
+            : '<polygon points="5 3 19 12 5 21 5 3"/>'}
+        </svg>
+      </div>
+      <div class="port port-right" data-start-id="${st.id}" data-side="right"></div>
+    `;
+    if (st.initiated) el.classList.add('start-initiated');
+    canvas.appendChild(el);
+    setupProjectStartEvents(el, st.id);
+  });
+
+  // Restore nodes
+  savedNodes.forEach(n => {
+    nodeCounter = Math.max(nodeCounter, n.id);
+    phaseCount[n.phaseIdx] = (phaseCount[n.phaseIdx] || 0) + 1;
+    nodes.push(n);
+    const ph = PHASES[n.phaseIdx];
+    const isBC = n.title === 'Business Case';
+    const el = document.createElement('div');
+    el.className = 'node'; el.id = 'node-' + n.id;
+    el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
+    if (isBC) el.style.borderColor = 'rgba(90,79,207,0.35)';
+    el.innerHTML = `
+      <div class="node-top" style="background:${ph.color}"></div>
+      <div class="node-body">
+        <div class="node-phase-label" style="color:${ph.color}">${ph.name}</div>
+        <div class="node-title">${n.title}</div>
+        <div class="node-desc">${n.desc || ''}</div>
+      </div>
+      <div class="node-progress" id="progress-${n.id}"></div>
+      ${isBC ? `
+      <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openBusinessCase()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Business Case
+      </button>` : ''}
+      <div class="node-footer">
+        <div style="display:flex;gap:4px;margin-left:auto">
+          <button class="node-edit" title="Edit" onmousedown="event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="node-delete" title="Delete" onmousedown="event.stopPropagation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="port port-right" data-id="${n.id}" data-side="right"></div>
+      <div class="port port-left"  data-id="${n.id}" data-side="left"></div>
+    `;
+    canvas.appendChild(el);
+    setupNodeEvents(el, n.id);
+    renderProgress(n.id);
+  });
+
+  // Restore gates
+  savedGates.forEach(g => {
+    gateCounter = Math.max(gateCounter, g.id);
+    gates.push(g);
+    const labelHTML = g.label.endsWith('Exit Gate') && g.label !== 'Exit Gate'
+      ? g.label.replace(' Exit Gate', '') + '<br>Exit Gate' : g.label;
+    const el = document.createElement('div');
+    el.className = 'gate' + (g.approved ? ' gate-approved' : '');
+    el.id = 'gate-' + g.id;
+    el.style.left = g.x + 'px'; el.style.top = g.y + 'px';
+    el.innerHTML = `
+      <div class="gate-label">${labelHTML}</div>
+      <div class="gate-icon" id="gate-icon-${g.id}">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          ${g.approved
+            ? '<polyline points="20 6 9 17 4 12"/>'
+            : '<line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>'}
+        </svg>
+      </div>
+      <div class="port port-right" data-gate-id="${g.id}" data-side="right"></div>
+      <div class="port port-left"  data-gate-id="${g.id}" data-side="left"></div>
+    `;
+    canvas.appendChild(el);
+    setupGateEvents(el, g.id);
+  });
+
+  // Restore project ends
+  savedEnds.forEach(en => {
+    projectEndCounter = Math.max(projectEndCounter, en.id);
+    projectEnds.push(en);
+    const el = document.createElement('div');
+    el.className = 'project-end' + (en.completed ? ' end-completed' : '');
+    el.id = 'end-' + en.id;
+    el.style.left = en.x + 'px'; el.style.top = en.y + 'px';
+    el.innerHTML = `
+      <div class="project-end-label">Project End</div>
+      <div class="project-end-icon" id="end-icon-${en.id}">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          ${en.completed
+            ? '<polyline points="20 6 9 17 4 12"/>'
+            : '<rect x="3" y="3" width="18" height="18" rx="2"/>'}
+        </svg>
+      </div>
+      <div class="port port-left" data-end-id="${en.id}" data-side="left"></div>
+    `;
+    canvas.appendChild(el);
+    setupProjectEndEvents(el, en.id);
+  });
+
+  // Restore connections
+  connections.push(...savedConns);
+  renderArrows();
+  updateStatus();
+}
 
 function openBusinessCase() {
   window.location.href = 'business-case.html?id=' + BC_ID;
@@ -1339,6 +1523,7 @@ function addGate(label) {
   canvas.appendChild(el);
   setupGateEvents(el, id);
   updateStatus();
+  scheduleSave();
 }
 
 let activeGateId = null;
@@ -1390,6 +1575,7 @@ function approveGate(id, approved) {
     iconEl.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>`;
   }
   hideGateActions(id);
+  scheduleSave();
 }
 
 function deleteGate(id) {
@@ -1400,6 +1586,7 @@ function deleteGate(id) {
   if (el) el.remove();
   renderArrows();
   updateStatus();
+  scheduleSave();
 }
 
 function setupGateEvents(el, id) {
@@ -1450,6 +1637,7 @@ function init() {
 
   const defaultNodes = [
     { phaseIdx: 0, nodeName: 'Project Goal' },
+    { phaseIdx: 0, nodeName: 'Business Case' },
     { phaseIdx: 1, nodeName: 'Scope Document' },
     { phaseIdx: 2, nodeName: 'Sprint Initiation' },
     { phaseIdx: 3, nodeName: 'Success Criteria' },
@@ -1458,7 +1646,11 @@ function init() {
   const items = [];
   defaultNodes.forEach((n, i) => {
     items.push({ type: 'node', phaseIdx: n.phaseIdx, nodeName: n.nodeName });
-    if (i < defaultNodes.length - 1) items.push({ type: 'gate', exitPhaseIdx: n.phaseIdx });
+    const nextNode = defaultNodes[i + 1];
+    // Only add a gate when transitioning to a different phase
+    if (nextNode && nextNode.phaseIdx !== n.phaseIdx) {
+      items.push({ type: 'gate', exitPhaseIdx: n.phaseIdx });
+    }
   });
 
   let curX = startX;
@@ -1596,7 +1788,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   setupNodeEvents(el, id);
   renderProgress(id);
   updateStatus();
-  if (!silent) renderArrows();
+  if (!silent) { renderArrows(); scheduleSave(); }
   return id;
 }
 
@@ -1639,6 +1831,7 @@ function setProgress(id, value) {
   if (!node) return;
   node.progress = Math.max(0, Math.min(100, value));
   renderProgress(id);
+  scheduleSave();
 }
 
 // ── NODE EVENTS ──
@@ -1751,11 +1944,11 @@ window.addEventListener('mousemove', e => {
 });
 
 window.addEventListener('mouseup', e => {
-  if (dragging) { const el = document.getElementById('node-' + dragging); if (el) el.classList.remove('dragging'); dragging = null; }
-  if (draggingGate !== null) { const el = document.getElementById('gate-' + draggingGate); if (el) el.classList.remove('dragging'); draggingGate = null; }
-  if (draggingEnd !== null) { const el = document.getElementById('end-' + draggingEnd); if (el) el.classList.remove('dragging'); draggingEnd = null; }
-  if (draggingStart !== null) { const el = document.getElementById('start-' + draggingStart); if (el) el.classList.remove('dragging'); draggingStart = null; }
-  if (isPanning) { isPanning = false; canvasWrap.style.cursor = ''; }
+  if (dragging) { const el = document.getElementById('node-' + dragging); if (el) el.classList.remove('dragging'); dragging = null; scheduleSave(); }
+  if (draggingGate !== null) { const el = document.getElementById('gate-' + draggingGate); if (el) el.classList.remove('dragging'); draggingGate = null; scheduleSave(); }
+  if (draggingEnd !== null) { const el = document.getElementById('end-' + draggingEnd); if (el) el.classList.remove('dragging'); draggingEnd = null; scheduleSave(); }
+  if (draggingStart !== null) { const el = document.getElementById('start-' + draggingStart); if (el) el.classList.remove('dragging'); draggingStart = null; scheduleSave(); }
+  if (isPanning) { isPanning = false; canvasWrap.style.cursor = ''; scheduleSave(); }
   if (connecting) {
     const target = e.target;
     if (target.classList.contains('port')) {
@@ -1786,6 +1979,7 @@ canvasWrap.addEventListener('wheel', e => {
   panX = mx - (mx - panX) * (scale / prevScale);
   panY = my - (my - panY) * (scale / prevScale);
   applyTransform();
+  scheduleSave();
 }, { passive: false });
 
 function applyTransform() {
@@ -1811,6 +2005,7 @@ function zoom(delta) {
   panX = cx - (cx - panX) * (scale / prevScale);
   panY = cy - (cy - panY) * (scale / prevScale);
   applyTransform();
+  scheduleSave();
 }
 
 function addConnection(fromId, toId) {
@@ -1818,6 +2013,7 @@ function addConnection(fromId, toId) {
   if (connections.find(c => c.from===toId && c.to===fromId)) return;
   connections.push({ from: fromId, to: toId });
   renderArrows();
+  scheduleSave();
 }
 
 function getConnectorPoint(key, side) {
@@ -1887,6 +2083,7 @@ function renderArrows() {
     path.addEventListener('click', () => {
       connections = connections.filter(c => !(c.from===conn.from && c.to===conn.to));
       renderArrows();
+      scheduleSave();
     });
     svg.insertBefore(path, tempLine);
   });
@@ -1900,7 +2097,7 @@ function deleteNode(id) {
     connections = connections.filter(c => c.from !== id && c.to !== id);
     const el = document.getElementById('node-' + id);
     if (el) el.remove();
-    renderArrows(); updateStatus();
+    renderArrows(); updateStatus(); scheduleSave();
   });
 }
 
@@ -1989,6 +2186,7 @@ function initiateProject(id, initiated) {
     iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
   }
   hideStartActions(id);
+  scheduleSave();
 }
 
 function setupProjectStartEvents(el, id) {
@@ -2059,6 +2257,7 @@ function completeProjectEnd(id, completed) {
     iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
   }
   hideEndActions(id);
+  scheduleSave();
 }
 
 function setupProjectEndEvents(el, id) {
@@ -2114,6 +2313,7 @@ function autoLayout() {
     if (el) { el.style.left = node.x + 'px'; el.style.top = node.y + 'px'; }
   });
   renderArrows();
+  scheduleSave();
 }
 
 function updateStatus() {
@@ -2147,6 +2347,7 @@ function saveEditModal() {
     if (descEl)  descEl.textContent  = node.desc;
   }
   closeEditModal();
+  scheduleSave();
 }
 
 function closeEditModal(e) {
@@ -2182,6 +2383,7 @@ function saveStartEditModal() {
   const goalEl = document.getElementById('topbar-goal');
   if (goalEl && st.projectGoal) goalEl.textContent = st.projectGoal;
   closeStartEditModal();
+  scheduleSave();
 }
 
 function closeStartEditModal(e) {
@@ -2208,8 +2410,6 @@ document.addEventListener('keydown', e => {
 });
 
 function resetView() { scale = 1; panX = 40; panY = 40; applyTransform(); }
-resetView();
-init();
 
 function updateCanvasTop() {
   const topbar = document.querySelector('.topbar');
@@ -2217,8 +2417,22 @@ function updateCanvasTop() {
   const wrap = document.getElementById('canvasWrap');
   if (topbar && subbar && wrap) wrap.style.top = (topbar.offsetHeight + subbar.offsetHeight) + 'px';
 }
+
+// ── EXPOSE TO INLINE onclick HANDLERS (ES module scope) ──
+Object.assign(window, {
+  openBusinessCase, openPhaseMenu, pickNode, pickCustomNode,
+  saveOtherNodeModal, closeOtherNodeModal, saveCustomNodeModal, closeCustomNodeModal,
+  openGateMenu, addGate, addCustomGate, approveGate, deleteGate,
+  setProgress, autoLayout, zoom,
+  openEditModal, saveEditModal, closeEditModal,
+  openStartEditModal, saveStartEditModal, closeStartEditModal,
+  ctxDuplicate, ctxDelete, initiateProject, completeProjectEnd,
+});
+
+// ── BOOT: load from Supabase ──
 updateCanvasTop();
 window.addEventListener('resize', updateCanvasTop);
+loadGraph();
 </script>
 </body>
 </html>
