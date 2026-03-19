@@ -1106,6 +1106,40 @@
   </div>
 </div>
 
+<!-- CUSTOM GATE MODAL -->
+<div class="edit-overlay" id="custom-gate-modal" style="display:none;" onmousedown="closeCustomGateModal(event)">
+  <div class="edit-modal" onmousedown="event.stopPropagation()">
+    <div class="edit-modal-header">Custom Gate</div>
+    <div class="edit-field">
+      <label>Label</label>
+      <input type="text" id="custom-gate-label" placeholder="e.g. Design Review Gate" />
+    </div>
+    <div class="edit-field">
+      <label>Colour</label>
+      <input type="hidden" id="custom-gate-color" value="#555450" />
+      <div id="custom-gate-swatches" style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 0;"></div>
+      <div id="custom-gate-color-label" style="font-size:11px; color:var(--text3); margin-top:4px;">Dark Grey</div>
+    </div>
+    <div class="edit-field">
+      <label>Divider Line</label>
+      <div style="display:flex; gap:16px; align-items:center; padding:4px 0;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); text-transform:none; letter-spacing:0; font-weight:400; cursor:pointer;">
+          <input type="radio" name="gate-divider" id="custom-gate-divider" value="yes" checked style="cursor:pointer;" />
+          Show divider line
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); text-transform:none; letter-spacing:0; font-weight:400; cursor:pointer;">
+          <input type="radio" name="gate-divider" value="no" style="cursor:pointer;" />
+          No divider line
+        </label>
+      </div>
+    </div>
+    <div class="edit-modal-actions">
+      <button class="edit-cancel" onclick="closeCustomGateModal()">Cancel</button>
+      <button class="edit-save" onclick="saveCustomGateModal()">Add Gate</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 // ── SUPABASE ──
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -1536,19 +1570,76 @@ function openGateMenu(e) {
   popoutOpen = true;
 }
 
-function addCustomGate() {
-  const name = prompt('Enter a name for this gate:');
-  if (name && name.trim()) addGate(name.trim());
+// ── CUSTOM GATE MODAL ──
+const GATE_COLORS = [
+  { value: '#555450', label: 'Dark Grey' },
+  { value: '#7c6fcd', label: 'Purple' },
+  { value: '#5a9e7a', label: 'Green' },
+  { value: '#4a8bc4', label: 'Blue' },
+  { value: '#c4854a', label: 'Orange' },
+  { value: '#c03030', label: 'Red' },
+  { value: '#3a9ebf', label: 'Teal' },
+  { value: '#c45a8a', label: 'Pink' },
+  { value: '#c4b44a', label: 'Gold' },
+  { value: '#1a2a4a', label: 'Navy' },
+  { value: '#7a4acf', label: 'Violet' },
+  { value: '#2db3a0', label: 'Cyan' },
+];
+
+function initGateColorSwatches(selected) {
+  const container = document.getElementById('custom-gate-swatches');
+  const labelEl   = document.getElementById('custom-gate-color-label');
+  container.innerHTML = '';
+  GATE_COLORS.forEach(c => {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch' + (c.value === selected ? ' selected' : '');
+    swatch.style.background = c.value;
+    swatch.title = c.label;
+    swatch.addEventListener('click', () => {
+      document.getElementById('custom-gate-color').value = c.value;
+      container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      labelEl.textContent = c.label;
+    });
+    container.appendChild(swatch);
+  });
+  document.getElementById('custom-gate-color').value = selected;
+  const match = GATE_COLORS.find(c => c.value === selected);
+  labelEl.textContent = match ? match.label : '';
 }
 
-function addGate(label) {
+function saveCustomGateModal() {
+  const label = document.getElementById('custom-gate-label').value.trim();
+  if (!label) { document.getElementById('custom-gate-label').focus(); return; }
+  const color = document.getElementById('custom-gate-color').value;
+  const showDivider = document.getElementById('custom-gate-divider').checked;
+  closeCustomGateModal();
+  addGate(label, color, showDivider);
+}
+
+function closeCustomGateModal(e) {
+  if (e && e.target !== document.getElementById('custom-gate-modal')) return;
+  document.getElementById('custom-gate-modal').style.display = 'none';
+}
+
+function addCustomGate() {
+  document.getElementById('custom-gate-label').value = '';
+  document.getElementById('custom-gate-divider').checked = true;
+  initGateColorSwatches('#555450');
+  document.getElementById('custom-gate-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('custom-gate-label').focus(), 50);
+}
+
+function addGate(label, color, showDivider) {
   label = label || 'Exit Gate';
+  color = color || '#555450';
+  showDivider = showDivider !== undefined ? showDivider : false;
   const id = ++gateCounter;
   const rightmost = nodes.reduce((max, n) => n.x > max ? n.x : max, 80);
   const gateRightmost = gates.reduce((max, g) => g.x > max ? g.x : max, rightmost);
   const x = gateRightmost + 240;
   const y = 160 + (145 - 64) / 2;
-  const gate = { id, x, y, approved: false, label };
+  const gate = { id, x, y, approved: false, label, color, showDivider };
   gates.push(gate);
   const labelHTML = label.endsWith('Exit Gate') && label !== 'Exit Gate'
     ? label.replace(' Exit Gate', '') + '<br>Exit Gate' : label;
@@ -1571,6 +1662,15 @@ function addGate(label) {
   setupGateEvents(el, id);
   updateStatus();
   scheduleSave();
+}
+
+// Darken a hex color by amount for border
+function adjustColor(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, Math.min(255, (n >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amount));
+  const b = Math.max(0, Math.min(255, (n & 0xff) + amount));
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
 let activeGateId = null;
@@ -1887,7 +1987,7 @@ async function computeBCProgress() {
   try {
     const [bcRes, ...tableRes] = await Promise.all([
       sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')).eq('id', BC_ID).single(),
-      ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id', { count: 'exact', head: true }).eq('business_case_id', BC_ID)),
+      ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
     ]);
 
     const row = bcRes.data || {};
@@ -1895,7 +1995,7 @@ async function computeBCProgress() {
     // Count filled text fields
     const filledText = BC_TEXT_FIELDS.filter(f => row[f] && row[f].trim() !== '').length;
     // Count tables with at least one row
-    const filledTables = tableRes.filter(r => (r.count || 0) > 0).length;
+    const filledTables = tableRes.filter(r => r.data && r.data.length > 0).length;
     const filled = filledText + filledTables;
     const pct = Math.round((filled / BC_TOTAL_FIELDS) * 100);
 
@@ -2211,6 +2311,18 @@ function addConnection(fromId, toId) {
   scheduleSave();
 }
 
+function drawDividerLine(lineX, color) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.classList.add('phase-divider');
+  line.setAttribute('x1', lineX); line.setAttribute('y1', -2000);
+  line.setAttribute('x2', lineX); line.setAttribute('y2', 5000);
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '2.5');
+  line.setAttribute('stroke-dasharray', '6 4');
+  line.setAttribute('opacity', '0.75');
+  svg.insertBefore(line, tempLine);
+}
+
 function getConnectorPoint(key, side) {
   if (typeof key === 'string' && key.startsWith('g')) {
     const g = gates.find(g => g.id === parseInt(key.slice(1)));
@@ -2239,10 +2351,18 @@ function getPhaseIdx(key) {
 }
 
 function renderArrows() {
-  svg.querySelectorAll('path.arrow, line.phase-divider').forEach(p => p.remove());
+  svg.querySelectorAll('path.arrow, line.phase-divider, text.phase-label').forEach(p => p.remove());
+
+  // Collect divider x positions keyed by phase transition
+  // dividerLines[phaseIdx] = x of the line to the RIGHT of that phase
+  const dividerXByPhase = {}; // phaseIdx -> x of RIGHT boundary
+  const dividerXLeft = {};    // phaseIdx -> x of LEFT boundary (= right boundary of prev phase)
+
   gates.forEach(gate => {
     const inConns  = connections.filter(c => c.to === 'g' + gate.id);
     const outConns = connections.filter(c => c.from === 'g' + gate.id);
+
+    // Draw phase divider if gate is between two different phases
     inConns.forEach(inConn => {
       const fromPh = getPhaseIdx(inConn.from);
       outConns.forEach(outConn => {
@@ -2250,17 +2370,73 @@ function renderArrows() {
         if (fromPh === -1 || toPh === -1 || fromPh === toPh) return;
         const lineX = gate.x + 64 + 40;
         const ph = PHASES[toPh];
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.classList.add('phase-divider');
-        line.setAttribute('x1', lineX); line.setAttribute('y1', -2000);
-        line.setAttribute('x2', lineX); line.setAttribute('y2', 5000);
-        line.setAttribute('stroke', ph.color);
-        line.setAttribute('stroke-width', '2.5');
-        line.setAttribute('stroke-dasharray', '6 4');
-        line.setAttribute('opacity', '0.75');
-        svg.insertBefore(line, tempLine);
+        drawDividerLine(lineX, ph.color);
+        // This line is the right boundary of fromPh and left boundary of toPh
+        dividerXByPhase[fromPh] = lineX;
+        dividerXLeft[toPh] = lineX;
       });
     });
+
+    // Also draw divider for custom gates with showDivider enabled
+    if (gate.showDivider) {
+      const alreadyDrawn = inConns.some(inConn => {
+        const fromPh = getPhaseIdx(inConn.from);
+        return outConns.some(outConn => {
+          const toPh = getPhaseIdx(outConn.to);
+          return fromPh !== -1 && toPh !== -1 && fromPh !== toPh;
+        });
+      });
+      if (!alreadyDrawn) {
+        const lineX = gate.x + 64 + 40;
+        drawDividerLine(lineX, gate.color || '#555450');
+      }
+    }
+  });
+
+  // ── PHASE LABELS ──
+  // For each phase that has nodes, draw a floating label centered between its dividers
+  const phaseGroups = {};
+  nodes.forEach(n => {
+    if (!phaseGroups[n.phaseIdx]) phaseGroups[n.phaseIdx] = [];
+    phaseGroups[n.phaseIdx].push(n);
+  });
+
+  Object.keys(phaseGroups).forEach(phIdx => {
+    phIdx = parseInt(phIdx);
+    const phaseNodes = phaseGroups[phIdx];
+    const ph = PHASES[phIdx];
+
+    // Left boundary: divider to the left of this phase, or leftmost node edge
+    const leftX = dividerXLeft[phIdx] !== undefined
+      ? dividerXLeft[phIdx]
+      : Math.min(...phaseNodes.map(n => n.x));
+
+    // Right boundary: divider to the right of this phase, or rightmost node edge
+    const rightX = dividerXByPhase[phIdx] !== undefined
+      ? dividerXByPhase[phIdx]
+      : Math.max(...phaseNodes.map(n => n.x + 180));
+
+    const centerX = (leftX + rightX) / 2;
+
+    // Y: 200px above the highest (lowest y value) node in this phase
+    const highestY = Math.min(...phaseNodes.map(n => n.y));
+    const labelY = highestY - 150;
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.classList.add('phase-label');
+    text.setAttribute('x', centerX);
+    text.setAttribute('y', labelY);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', ph.color);
+    text.setAttribute('font-family', 'Syne, sans-serif');
+    text.setAttribute('font-size', '13');
+    text.setAttribute('font-weight', '700');
+    text.setAttribute('letter-spacing', '0.08em');
+    text.setAttribute('opacity', '0.85');
+    text.setAttribute('pointer-events', 'none');
+    text.setAttribute('user-select', 'none');
+    text.textContent = ph.name.toUpperCase();
+    svg.insertBefore(text, tempLine);
   });
   connections.forEach(conn => {
     const fp = getConnectorPoint(conn.from, 'from');
@@ -2785,6 +2961,10 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('startEditOverlay').style.display === 'flex') {
     if (e.key === 'Escape') closeStartEditModal({ target: document.getElementById('startEditOverlay') });
   }
+  if (document.getElementById('custom-gate-modal').style.display === 'flex') {
+    if (e.key === 'Escape') closeCustomGateModal({ target: document.getElementById('custom-gate-modal') });
+    if (e.key === 'Enter' && !e.shiftKey) saveCustomGateModal();
+  }
   if (document.getElementById('otherNodeOverlay').style.display === 'flex') {
     if (e.key === 'Escape') closeOtherNodeModal({ target: document.getElementById('otherNodeOverlay') });
     if (e.key === 'Enter' && !e.shiftKey) saveOtherNodeModal();
@@ -2810,6 +2990,7 @@ Object.assign(window, {
   openStartEditModal, saveStartEditModal, closeStartEditModal,
   ctxDuplicate, ctxDelete, initiateProject, completeProjectEnd,
   showDuplicateConfirm, dismissArrowMenu, refreshBCNode,
+  saveCustomGateModal, closeCustomGateModal, initGateColorSwatches,
 });
 
 // ── BOOT: load from Supabase ──
