@@ -2122,9 +2122,9 @@ function renderArrows() {
         line.setAttribute('x1', lineX); line.setAttribute('y1', -2000);
         line.setAttribute('x2', lineX); line.setAttribute('y2', 5000);
         line.setAttribute('stroke', ph.color);
-        line.setAttribute('stroke-width', '1.5');
-        line.setAttribute('stroke-dasharray', '5 5');
-        line.setAttribute('opacity', '0.55');
+        line.setAttribute('stroke-width', '2.5');
+        line.setAttribute('stroke-dasharray', '6 4');
+        line.setAttribute('opacity', '0.75');
         svg.insertBefore(line, tempLine);
       });
     });
@@ -2367,13 +2367,119 @@ function ctxDelete() {
 }
 
 function autoLayout() {
-  const sorted = [...nodes].sort((a, b) => a.phaseIdx - b.phaseIdx || a.id - b.id);
-  const startX = 80, rowY = 160, gapX = 240;
-  sorted.forEach((node, i) => {
-    node.x = startX + i * gapX; node.y = rowY;
-    const el = document.getElementById('node-' + node.id);
-    if (el) { el.style.left = node.x + 'px'; el.style.top = node.y + 'px'; }
+  const COL_W    = 220; // horizontal gap between columns
+  const ROW_H    = 180; // vertical gap between nodes in same column
+  const GATE_W   = 100; // narrower column for gates
+  const START_X  = 80;
+  const BASE_Y   = 200;
+
+  // Build a map of all keys and their types
+  function keyType(k) {
+    if (typeof k === 'string') {
+      if (k.startsWith('s')) return 'start';
+      if (k.startsWith('g')) return 'gate';
+      if (k.startsWith('e')) return 'end';
+    }
+    return 'node';
+  }
+
+  // Collect all keys
+  const allKeys = [
+    ...projectStarts.map(s => 's' + s.id),
+    ...nodes.map(n => n.id),
+    ...gates.map(g => 'g' + g.id),
+    ...projectEnds.map(e => 'e' + e.id),
+  ];
+
+  // Build adjacency: fromKey -> [toKey, ...]
+  const outEdges = {};
+  const inEdges  = {};
+  allKeys.forEach(k => { outEdges[k] = []; inEdges[k] = []; });
+  connections.forEach(c => {
+    if (outEdges[c.from] !== undefined) outEdges[c.from].push(c.to);
+    if (inEdges[c.to]   !== undefined) inEdges[c.to].push(c.from);
   });
+
+  // Assign column (depth) via longest-path from roots (nodes with no incoming edges)
+  const depth = {};
+  allKeys.forEach(k => depth[k] = 0);
+
+  // Topological sort via Kahn's algorithm
+  const inDegree = {};
+  allKeys.forEach(k => inDegree[k] = inEdges[k].length);
+  const queue = allKeys.filter(k => inDegree[k] === 0);
+  const topoOrder = [];
+  while (queue.length) {
+    const k = queue.shift();
+    topoOrder.push(k);
+    (outEdges[k] || []).forEach(next => {
+      depth[next] = Math.max(depth[next], depth[k] + 1);
+      inDegree[next]--;
+      if (inDegree[next] === 0) queue.push(next);
+    });
+  }
+
+  // Group keys by column
+  const columns = {};
+  topoOrder.forEach(k => {
+    const col = depth[k];
+    if (!columns[col]) columns[col] = [];
+    columns[col].push(k);
+  });
+
+  // Calculate x position per column (gates get narrower columns)
+  const colXMap = {};
+  let curX = START_X;
+  const sortedCols = Object.keys(columns).map(Number).sort((a, b) => a - b);
+  sortedCols.forEach(col => {
+    colXMap[col] = curX;
+    // Column width based on what's in it
+    const hasGateOnly = columns[col].every(k => keyType(k) === 'gate');
+    curX += hasGateOnly ? GATE_W : COL_W;
+  });
+
+  // Position each element
+  sortedCols.forEach(col => {
+    const keys = columns[col];
+    const x = colXMap[col];
+    const totalH = (keys.length - 1) * ROW_H;
+    const startY = BASE_Y - totalH / 2;
+
+    keys.forEach((key, i) => {
+      const y = startY + i * ROW_H;
+      const type = keyType(key);
+
+      if (type === 'start') {
+        const st = projectStarts.find(s => s.id === parseInt(key.slice(1)));
+        if (!st) return;
+        st.x = x; st.y = y;
+        const el = document.getElementById('start-' + st.id);
+        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+
+      } else if (type === 'gate') {
+        const gate = gates.find(g => g.id === parseInt(key.slice(1)));
+        if (!gate) return;
+        gate.x = x; gate.y = y;
+        const el = document.getElementById('gate-' + gate.id);
+        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+
+      } else if (type === 'end') {
+        const en = projectEnds.find(e => e.id === parseInt(key.slice(1)));
+        if (!en) return;
+        en.x = x; en.y = y;
+        const el = document.getElementById('end-' + en.id);
+        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+
+      } else {
+        const node = nodes.find(n => n.id === key);
+        if (!node) return;
+        node.x = x; node.y = y;
+        const el = document.getElementById('node-' + node.id);
+        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+      }
+    });
+  });
+
   renderArrows();
   scheduleSave();
 }
