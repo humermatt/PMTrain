@@ -1138,13 +1138,136 @@
   </div>
 </div>
 
-<script>
-// ── STATE ──
+<script type="module">
+// ── SUPABASE ──
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── BUSINESS CASE ID ──
+// In production pass this via URL param e.g. ?id=uuid
+// For now we upsert a fixed dev record so the page always has data to work with
+const BC_ID = '00000000-0000-0000-0000-000000000001';
+
+// ── STATE (mirrors DB) ──
 const fields = {};
-const costs = [];
-const benefits = [];
-const risks = [];
-const stakeholders = [];
+let costs = [];
+let benefits = [];
+let risks = [];
+let stakeholders = [];
+let docs = [];
+let editingDocId = null;
+
+// ── TOAST ──
+function showToast(msg, type = 'saved') {
+  let toast = document.getElementById('sb-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sb-toast';
+    toast.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+      padding:8px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:12px;
+      font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;`;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.background = type === 'error' ? '#c03030' : '#1a1a1f';
+  toast.style.color = '#fff';
+  toast.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.style.opacity = '0', 2200);
+}
+
+// ── LOAD ALL DATA FROM SUPABASE ──
+async function loadAll() {
+  // Ensure a business_case row exists
+  const { data: bc, error: bcErr } = await sb
+    .from('business_cases')
+    .upsert({ id: BC_ID }, { onConflict: 'id', ignoreDuplicates: true })
+    .select()
+    .single();
+
+  // Fetch the row
+  const { data: row } = await sb
+    .from('business_cases')
+    .select('*')
+    .eq('id', BC_ID)
+    .single();
+
+  if (row) {
+    // Restore text fields
+    const textFields = ['summary','problem','current_situation','strategic_objectives',
+      'success_criteria','assumptions','constraints','recommended_option','alternatives','conclusion'];
+    textFields.forEach(key => {
+      const uiKey = key === 'current_situation' ? 'current'
+                  : key === 'strategic_objectives' ? 'strategic'
+                  : key === 'recommended_option' ? 'option'
+                  : key;
+      if (row[key]) {
+        fields[uiKey] = row[key];
+        const display = document.getElementById('f-' + uiKey);
+        if (display) { display.textContent = row[key]; display.classList.remove('empty'); }
+      }
+    });
+
+    // Status
+    if (row.status) {
+      const idx = STATUSES.findIndex(s => s.key === row.status);
+      if (idx > -1) { statusIdx = idx; applyStatus(); }
+    }
+
+    // Approver
+    if (row.approver) {
+      document.getElementById('approver-name').textContent = row.approver;
+      document.getElementById('approver-name').style.color = 'var(--text)';
+    }
+
+    // Updated at
+    if (row.updated_at) {
+      const d = new Date(row.updated_at);
+      document.querySelector('.page-header-actions span').innerHTML =
+        `Last edited <strong style="color:var(--text2)">${d.toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</strong>`;
+    }
+  }
+
+  // Load related tables in parallel
+  const [costsRes, benefitsRes, risksRes, shRes, docsRes] = await Promise.all([
+    sb.from('cost_items').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('benefit_items').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('risks').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('stakeholders').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('documents').select('*').eq('business_case_id', BC_ID).order('created_at'),
+  ]);
+
+  costs        = costsRes.data    || [];
+  benefits     = benefitsRes.data || [];
+  risks        = risksRes.data    || [];
+  stakeholders = shRes.data       || [];
+  docs         = docsRes.data     || [];
+
+  renderCosts(); renderBenefits(); renderRisks();
+  renderStakeholders(); renderDocs(); updateMetrics();
+}
+
+// ── SAVE MAIN FIELDS TO SUPABASE ──
+let saveTimer = null;
+async function persistField(uiKey, value) {
+  const colMap = {
+    summary: 'summary', problem: 'problem', current: 'current_situation',
+    strategic: 'strategic_objectives', success: 'success_criteria',
+    assumptions: 'assumptions', constraints: 'constraints',
+    option: 'recommended_option', alternatives: 'alternatives', conclusion: 'conclusion',
+  };
+  const col = colMap[uiKey];
+  if (!col) return;
+  const { error } = await sb.from('business_cases')
+    .update({ [col]: value, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID);
+  if (error) { showToast('Save failed', 'error'); console.error(error); }
+  else showToast('Saved');
+}
+
+// ── STATE ──
 let itemModalType = 'cost';
 
 const AVATAR_COLORS = ['#7c6fcd','#5a9e7a','#4a8bc4','#c4854a','#c03030','#3a9ebf','#c45a8a'];
@@ -1183,12 +1306,21 @@ function deactivateField(key) {
 
 function saveField(key) {
   fields[key] = document.getElementById('fi-' + key).value;
-  updateTimestamp();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => persistField(key, fields[key]), 800);
 }
 
 // ── STATUS ──
 function cycleStatus() {
   statusIdx = (statusIdx + 1) % STATUSES.length;
+  applyStatus();
+  sb.from('business_cases')
+    .update({ status: STATUSES[statusIdx].key, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID)
+    .then(({ error }) => error ? showToast('Save failed','error') : showToast('Status updated'));
+}
+
+function applyStatus() {
   const s = STATUSES[statusIdx];
   const chip = document.getElementById('doc-status-chip');
   chip.className = 'status-chip ' + s.cls;
@@ -1197,8 +1329,12 @@ function cycleStatus() {
 
 // ── TIMESTAMP ──
 function updateTimestamp() {
+  const now = new Date();
   document.querySelector('.page-header-actions span').innerHTML =
-    'Last edited <strong style="color:var(--text2)">just now</strong>';
+    `Last edited <strong style="color:var(--text2)">just now</strong>`;
+  sb.from('business_cases')
+    .update({ updated_at: now.toISOString() })
+    .eq('id', BC_ID).then(() => {});
 }
 
 // ── MODAL ──
@@ -1230,51 +1366,58 @@ function closeModal(id, e) {
     document.getElementById(id).style.display = 'none';
 }
 
-function saveItemModal() {
+async function saveItemModal() {
   const desc   = document.getElementById('item-desc').value.trim();
   const cat    = document.getElementById('item-cat').value.trim();
   const amount = parseFloat(document.getElementById('item-amount').value) || 0;
   if (!desc) { document.getElementById('item-desc').focus(); return; }
 
-  const id = Date.now();
-  if (itemModalType === 'cost') {
-    costs.push({ id, desc, cat, amount });
-    renderCosts();
-  } else {
-    benefits.push({ id, desc, cat, amount });
-    renderBenefits();
-  }
+  const table = itemModalType === 'cost' ? 'cost_items' : 'benefit_items';
+  const { data, error } = await sb.from(table)
+    .insert({ business_case_id: BC_ID, description: desc, category: cat, amount })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+
+  if (itemModalType === 'cost') { costs.push(data); renderCosts(); }
+  else { benefits.push(data); renderBenefits(); }
+
   document.getElementById('item-modal').style.display = 'none';
-  updateMetrics();
-  updateTimestamp();
+  updateMetrics(); showToast('Saved');
 }
 
-function saveRiskModal() {
+async function saveRiskModal() {
   const desc = document.getElementById('risk-desc').value.trim();
   if (!desc) { document.getElementById('risk-desc').focus(); return; }
-  risks.push({
-    id: Date.now(),
-    desc,
-    likelihood: document.getElementById('risk-likelihood').value,
-    impact: document.getElementById('risk-impact').value,
-  });
+  const likelihood = document.getElementById('risk-likelihood').value;
+  const impact     = document.getElementById('risk-impact').value;
+
+  const { data, error } = await sb.from('risks')
+    .insert({ business_case_id: BC_ID, description: desc, likelihood, impact })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+  risks.push(data);
   renderRisks();
   document.getElementById('risk-modal').style.display = 'none';
-  updateTimestamp();
+  showToast('Saved');
 }
 
-function saveStakeholderModal() {
+async function saveStakeholderModal() {
   const name = document.getElementById('sh-name').value.trim();
   if (!name) { document.getElementById('sh-name').focus(); return; }
-  stakeholders.push({
-    id: Date.now(),
-    name,
-    role: document.getElementById('sh-role').value.trim(),
-    color: AVATAR_COLORS[stakeholders.length % AVATAR_COLORS.length],
-  });
+  const role  = document.getElementById('sh-role').value.trim();
+  const color = AVATAR_COLORS[stakeholders.length % AVATAR_COLORS.length];
+
+  const { data, error } = await sb.from('stakeholders')
+    .insert({ business_case_id: BC_ID, name, role, color })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+  stakeholders.push(data);
   renderStakeholders();
   document.getElementById('stakeholder-modal').style.display = 'none';
-  updateTimestamp();
+  showToast('Saved');
 }
 
 // ── RENDERERS ──
@@ -1292,17 +1435,17 @@ function renderCosts() {
     row.style.gridTemplateColumns = '1fr 100px 22px';
     row.innerHTML = `
       <div>
-        <div class="table-row-text">${c.desc}</div>
-        ${c.cat ? `<div class="table-row-sub">${c.cat}</div>` : ''}
+        <div class="table-row-text">${c.description}</div>
+        ${c.category ? `<div class="table-row-sub">${c.category}</div>` : ''}
       </div>
       <div class="table-row-amount" style="color:var(--c5)">${fmt(c.amount)}</div>
-      <button class="table-row-delete" onclick="deleteItem('cost', ${c.id})">
+      <button class="table-row-delete" onclick="deleteItem('cost', '${c.id}')">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     `;
     container.appendChild(row);
   });
-  const total = costs.reduce((s, c) => s + c.amount, 0);
+  const total = costs.reduce((s, c) => s + (c.amount || 0), 0);
   document.getElementById('costs-total').textContent = costs.length ? fmt(total) : '—';
 }
 
@@ -1315,17 +1458,17 @@ function renderBenefits() {
     row.style.gridTemplateColumns = '1fr 100px 22px';
     row.innerHTML = `
       <div>
-        <div class="table-row-text">${b.desc}</div>
-        ${b.cat ? `<div class="table-row-sub">${b.cat}</div>` : ''}
+        <div class="table-row-text">${b.description}</div>
+        ${b.category ? `<div class="table-row-sub">${b.category}</div>` : ''}
       </div>
       <div class="table-row-amount" style="color:var(--c2)">${fmt(b.amount)}</div>
-      <button class="table-row-delete" onclick="deleteItem('benefit', ${b.id})">
+      <button class="table-row-delete" onclick="deleteItem('benefit', '${b.id}')">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     `;
     container.appendChild(row);
   });
-  const total = benefits.reduce((s, b) => s + b.amount, 0);
+  const total = benefits.reduce((s, b) => s + (b.amount || 0), 0);
   document.getElementById('benefits-total').textContent = benefits.length ? fmt(total) : '—';
 }
 
@@ -1336,10 +1479,10 @@ function renderRisks() {
     const row = document.createElement('div');
     row.className = 'risk-row';
     row.innerHTML = `
-      <div class="table-row-text">${r.desc}</div>
+      <div class="table-row-text">${r.description}</div>
       <div style="text-align:center"><span class="risk-badge risk-${r.likelihood}">${r.likelihood}</span></div>
       <div style="text-align:center"><span class="risk-badge risk-${r.impact}">${r.impact}</span></div>
-      <button class="table-row-delete" onclick="deleteRisk(${r.id})">
+      <button class="table-row-delete" onclick="deleteRisk('${r.id}')">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     `;
@@ -1368,32 +1511,27 @@ function renderStakeholders() {
 }
 
 // ── DELETE ──
-function deleteItem(type, id) {
-  if (type === 'cost') {
-    const i = costs.findIndex(c => c.id === id);
-    if (i > -1) costs.splice(i, 1);
-    renderCosts();
-  } else {
-    const i = benefits.findIndex(b => b.id === id);
-    if (i > -1) benefits.splice(i, 1);
-    renderBenefits();
-  }
-  updateMetrics();
-  updateTimestamp();
+async function deleteItem(type, id) {
+  const table = type === 'cost' ? 'cost_items' : 'benefit_items';
+  const { error } = await sb.from(table).delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  if (type === 'cost') { costs = costs.filter(c => c.id !== id); renderCosts(); }
+  else { benefits = benefits.filter(b => b.id !== id); renderBenefits(); }
+  updateMetrics(); showToast('Deleted');
 }
 
-function deleteRisk(id) {
-  const i = risks.findIndex(r => r.id === id);
-  if (i > -1) risks.splice(i, 1);
-  renderRisks();
-  updateTimestamp();
+async function deleteRisk(id) {
+  const { error } = await sb.from('risks').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  risks = risks.filter(r => r.id !== id);
+  renderRisks(); showToast('Deleted');
 }
 
-function deleteStakeholder(id) {
-  const i = stakeholders.findIndex(s => s.id === id);
-  if (i > -1) stakeholders.splice(i, 1);
-  renderStakeholders();
-  updateTimestamp();
+async function deleteStakeholder(id) {
+  const { error } = await sb.from('stakeholders').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  stakeholders = stakeholders.filter(s => s.id !== id);
+  renderStakeholders(); showToast('Deleted');
 }
 
 // ── METRICS ──
@@ -1447,19 +1585,27 @@ function closeApproverPopout() {
   document.getElementById('approver-popout').style.display = 'none';
 }
 
-function saveApprover() {
+async function saveApprover() {
   const name = document.getElementById('approver-input').value.trim();
   document.getElementById('approver-name').textContent = name || 'None';
   document.getElementById('approver-name').style.color = name ? 'var(--text)' : 'var(--text2)';
   closeApproverPopout();
-  if (name) updateTimestamp();
+  const { error } = await sb.from('business_cases')
+    .update({ approver: name || null, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID);
+  if (error) showToast('Save failed', 'error');
+  else showToast('Approver updated');
 }
 
-function clearApprover() {
+async function clearApprover() {
   document.getElementById('approver-input').value = '';
   document.getElementById('approver-name').textContent = 'None';
   document.getElementById('approver-name').style.color = 'var(--text2)';
   closeApproverPopout();
+  await sb.from('business_cases')
+    .update({ approver: null, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID);
+  showToast('Approver cleared');
 }
 
 // Close approver popout when clicking outside
@@ -1486,9 +1632,6 @@ function saveAndLeave() {
 }
 
 // ── DOCUMENTS ──
-const docs = [];
-let editingDocId = null;
-
 const DOC_TYPES = {
   note:       { label: 'Note',       emoji: '📝', color: '#7c6fcd', light: 'rgba(124,111,205,0.12)' },
   decision:   { label: 'Decision',   emoji: '✅', color: '#5a9e7a', light: 'rgba(90,158,122,0.12)'  },
@@ -1508,7 +1651,7 @@ function onDocTypeChange() {
     'Write your note or details here…';
 }
 
-function saveDocModal() {
+async function saveDocModal() {
   const type    = document.getElementById('doc-type').value;
   const title   = document.getElementById('doc-title').value.trim();
   const content = document.getElementById('doc-content').value.trim();
@@ -1517,43 +1660,41 @@ function saveDocModal() {
   if (!title) { document.getElementById('doc-title').focus(); return; }
   if (isRef && !url && !content) { document.getElementById('doc-url').focus(); return; }
 
-  docs.push({ id: Date.now(), type, title, content, url });
+  const { data, error } = await sb.from('documents')
+    .insert({ business_case_id: BC_ID, type, title, content, url })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+  docs.push(data);
   renderDocs();
   document.getElementById('doc-modal').style.display = 'none';
-  updateTimestamp();
+  showToast('Saved');
 }
 
-function openDocEdit(id) {
-  const doc = docs.find(d => d.id === id);
-  if (!doc) return;
-  editingDocId = id;
-  const isRef = doc.type === 'reference' || doc.type === 'attachment';
-  document.getElementById('doc-edit-title').value   = doc.title;
-  document.getElementById('doc-edit-content').value = doc.content || '';
-  document.getElementById('doc-edit-url').value     = doc.url || '';
-  document.getElementById('doc-edit-content-field').style.display = isRef ? 'none' : 'flex';
-  document.getElementById('doc-edit-url-field').style.display     = isRef ? 'flex' : 'none';
-  document.getElementById('doc-edit-modal').style.display = 'flex';
-  setTimeout(() => document.getElementById('doc-edit-title').focus(), 50);
-}
-
-function saveDocEdit() {
+async function saveDocEdit() {
   const doc = docs.find(d => d.id === editingDocId);
   if (!doc) return;
-  doc.title   = document.getElementById('doc-edit-title').value.trim() || doc.title;
-  doc.content = document.getElementById('doc-edit-content').value.trim();
-  doc.url     = document.getElementById('doc-edit-url').value.trim();
+  const title   = document.getElementById('doc-edit-title').value.trim() || doc.title;
+  const content = document.getElementById('doc-edit-content').value.trim();
+  const url     = document.getElementById('doc-edit-url').value.trim();
+
+  const { error } = await sb.from('documents')
+    .update({ title, content, url })
+    .eq('id', editingDocId);
+
+  if (error) { showToast('Save failed', 'error'); return; }
+  doc.title = title; doc.content = content; doc.url = url;
   renderDocs();
   document.getElementById('doc-edit-modal').style.display = 'none';
   editingDocId = null;
-  updateTimestamp();
+  showToast('Saved');
 }
 
-function deleteDoc(id) {
-  const i = docs.findIndex(d => d.id === id);
-  if (i > -1) docs.splice(i, 1);
-  renderDocs();
-  updateTimestamp();
+async function deleteDoc(id) {
+  const { error } = await sb.from('documents').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  docs = docs.filter(d => d.id !== id);
+  renderDocs(); showToast('Deleted');
 }
 
 function renderDocs() {
@@ -1612,33 +1753,53 @@ openModal = function(type) {
   _origOpenModal(type);
 };
 
-// extend keyboard handler for new modals
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.getElementById('doc-modal').style.display = 'none';
-    document.getElementById('doc-edit-modal').style.display = 'none';
-  }
-  if (e.key === 'Enter' && !e.shiftKey && document.activeElement.tagName !== 'TEXTAREA') {
-    if (document.getElementById('doc-modal').style.display === 'flex') { e.preventDefault(); saveDocModal(); }
-    if (document.getElementById('doc-edit-modal').style.display === 'flex') { e.preventDefault(); saveDocEdit(); }
-  }
-}, true);
+function openDocEdit(id) {
+  const doc = docs.find(d => d.id === id);
+  if (!doc) return;
+  editingDocId = id;
+  const isRef = doc.type === 'reference' || doc.type === 'attachment';
+  document.getElementById('doc-edit-title').value   = doc.title;
+  document.getElementById('doc-edit-content').value = doc.content || '';
+  document.getElementById('doc-edit-url').value     = doc.url || '';
+  document.getElementById('doc-edit-content-field').style.display = isRef ? 'none' : 'flex';
+  document.getElementById('doc-edit-url-field').style.display     = isRef ? 'flex' : 'none';
+  document.getElementById('doc-edit-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('doc-edit-title').focus(), 50);
+}
 
+// ── KEYBOARD ──
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    ['item-modal','risk-modal','stakeholder-modal'].forEach(id => {
-      document.getElementById(id).style.display = 'none';
-    });
+    ['item-modal','risk-modal','stakeholder-modal','doc-modal','doc-edit-modal','back-modal']
+      .forEach(id => { document.getElementById(id).style.display = 'none'; });
   }
-  const activeModal = ['item-modal','risk-modal','stakeholder-modal']
+  const activeModal = ['item-modal','risk-modal','stakeholder-modal','doc-modal','doc-edit-modal']
     .find(id => document.getElementById(id).style.display === 'flex');
   if (activeModal && e.key === 'Enter' && !e.shiftKey && document.activeElement.tagName !== 'TEXTAREA') {
     e.preventDefault();
-    if (activeModal === 'item-modal') saveItemModal();
-    else if (activeModal === 'risk-modal') saveRiskModal();
+    if (activeModal === 'item-modal')       saveItemModal();
+    else if (activeModal === 'risk-modal')  saveRiskModal();
     else if (activeModal === 'stakeholder-modal') saveStakeholderModal();
+    else if (activeModal === 'doc-modal')   saveDocModal();
+    else if (activeModal === 'doc-edit-modal') saveDocEdit();
   }
 });
+
+// ── EXPOSE TO INLINE onclick HANDLERS (required for ES modules) ──
+Object.assign(window, {
+  activateField, deactivateField, saveField,
+  cycleStatus, openModal, closeModal,
+  saveItemModal, saveRiskModal, saveStakeholderModal,
+  deleteItem, deleteRisk, deleteStakeholder,
+  renderCosts, renderBenefits, renderRisks, renderStakeholders,
+  toggleApproverPopout, closeApproverPopout, saveApprover, clearApprover,
+  confirmBackToGraph, discardAndLeave, saveAndLeave,
+  onDocTypeChange, saveDocModal, openDocEdit, saveDocEdit, deleteDoc,
+});
+
+// ── BOOT ──
+loadAll();
+
 </script>
 </body>
 </html>
