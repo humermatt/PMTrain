@@ -226,6 +226,9 @@
     pointer-events: none;
     overflow: visible;
   }
+  #arrows-svg path.arrow {
+    pointer-events: stroke;
+  }
 
   /* ── NODES ── */
   .node {
@@ -1756,6 +1759,7 @@ function init() {
   setTimeout(() => {
     for (let i = 0; i < placed.length - 1; i++) addConnection(placed[i].key, placed[i + 1].key);
     updateStatus();
+    autoLayout();
   }, 50);
 }
 
@@ -2045,7 +2049,7 @@ window.addEventListener('mouseup', e => {
 
 canvasWrap.addEventListener('wheel', e => {
   e.preventDefault();
-  const delta = e.deltaY > 0 ? -0.08 : 0.08;
+  const delta = e.deltaY > 0 ? -0.03 : 0.03;
   const wrapRect = canvasWrap.getBoundingClientRect();
   const mx = e.clientX - wrapRect.left, my = e.clientY - wrapRect.top;
   const prevScale = scale;
@@ -2064,6 +2068,7 @@ function applyTransform() {
 window.addEventListener('click', e => {
   if (!e.target.closest('#ctxMenu')) ctxMenu.style.display = 'none';
   if (!e.target.closest('#phasePopout') && !e.target.closest('.diamond-btn')) closePhaseMenu();
+  if (!e.target.closest('#arrow-menu')) dismissArrowMenu();
 });
 
 window.addEventListener('mousedown', e => {
@@ -2171,13 +2176,71 @@ function renderArrows() {
     path.setAttribute('stroke-width','2.5');
     path.setAttribute('marker-end','url(#arrowhead)');
     path.style.cursor = 'pointer';
-    path.addEventListener('click', () => {
-      connections = connections.filter(c => !(c.from===conn.from && c.to===conn.to));
-      renderArrows();
-      scheduleSave();
+    path.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showArrowMenu(conn.from, conn.to, e.clientX, e.clientY);
     });
     svg.insertBefore(path, tempLine);
+
+    // Wide invisible hit area so arrows are easy to click
+    const hitPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+    hitPath.classList.add('arrow');
+    hitPath.setAttribute('d', path.getAttribute('d'));
+    hitPath.setAttribute('fill','none');
+    hitPath.setAttribute('stroke','transparent');
+    hitPath.setAttribute('stroke-width','16');
+    hitPath.style.cursor = 'pointer';
+    hitPath.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showArrowMenu(conn.from, conn.to, e.clientX, e.clientY);
+    });
+    svg.insertBefore(hitPath, tempLine);
   });
+}
+
+// ── ARROW CONTEXT MENU ──
+let arrowMenu = null;
+
+function showArrowMenu(fromKey, toKey, clientX, clientY) {
+  dismissArrowMenu();
+
+  const btn = document.createElement('button');
+  btn.id = 'arrow-menu';
+  btn.style.cssText = `
+    position:fixed; z-index:300;
+    left:${clientX - 14}px; top:${clientY - 14}px;
+    width:28px; height:28px;
+    border-radius:50%; border:none;
+    background:#c03030;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.22);
+    transition:transform 0.15s, box-shadow 0.15s;
+  `;
+  btn.innerHTML = `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6"/><path d="M14 11v6"/>
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    </svg>
+  `;
+  btn.onmouseenter = () => { btn.style.transform = 'scale(1.12)'; btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.28)'; };
+  btn.onmouseleave = () => { btn.style.transform = 'scale(1)';    btn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.22)'; };
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    connections = connections.filter(c => !(c.from === fromKey && c.to === toKey));
+    renderArrows();
+    scheduleSave();
+    dismissArrowMenu();
+  });
+
+  document.body.appendChild(btn);
+  arrowMenu = { el: btn, fromKey, toKey };
+}
+
+function dismissArrowMenu() {
+  if (arrowMenu) { arrowMenu.el.remove(); arrowMenu = null; }
 }
 
 function deleteNode(id) {
@@ -2467,44 +2530,50 @@ function autoLayout() {
     curX += hasGateOnly ? 160 : COL_W;
   });
 
-  // Position each element
+  // Port offsets — where connection dots sit on each element type
+  const NODE_PORT_Y  = 50;  // node port at y + 50
+  const GATE_PORT_Y  = 32;  // gate port at y + 32
+  const START_PORT_Y = 36;  // start port at y + 36
+  const END_PORT_Y   = 36;  // end port at y + 36
+
+  // Position each element — align each element's port to the same row baseline
   sortedCols.forEach(col => {
     const keys = columns[col];
     const x = colXMap[col];
     const totalH = (keys.length - 1) * ROW_H;
-    const startY = BASE_Y - totalH / 2;
+    const portBaseline = BASE_Y + NODE_PORT_Y - totalH / 2; // y where ports should sit
 
     keys.forEach((key, i) => {
-      const y = startY + i * ROW_H;
+      const portY = portBaseline + i * ROW_H;
       const type = keyType(key);
 
       if (type === 'start') {
         const st = projectStarts.find(s => s.id === parseInt(key.slice(1)));
         if (!st) return;
-        st.x = x; st.y = y;
+        st.x = x; st.y = portY - START_PORT_Y;
         const el = document.getElementById('start-' + st.id);
-        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+        if (el) { el.style.left = st.x + 'px'; el.style.top = st.y + 'px'; }
 
       } else if (type === 'gate') {
         const gate = gates.find(g => g.id === parseInt(key.slice(1)));
         if (!gate) return;
-        gate.x = x; gate.y = y;
+        gate.x = x; gate.y = portY - GATE_PORT_Y;
         const el = document.getElementById('gate-' + gate.id);
-        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+        if (el) { el.style.left = gate.x + 'px'; el.style.top = gate.y + 'px'; }
 
       } else if (type === 'end') {
         const en = projectEnds.find(e => e.id === parseInt(key.slice(1)));
         if (!en) return;
-        en.x = x; en.y = y;
+        en.x = x; en.y = portY - END_PORT_Y;
         const el = document.getElementById('end-' + en.id);
-        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+        if (el) { el.style.left = en.x + 'px'; el.style.top = en.y + 'px'; }
 
       } else {
         const node = nodes.find(n => n.id === key);
         if (!node) return;
-        node.x = x; node.y = y;
+        node.x = x; node.y = portY - NODE_PORT_Y;
         const el = document.getElementById('node-' + node.id);
-        if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+        if (el) { el.style.left = node.x + 'px'; el.style.top = node.y + 'px'; }
       }
     });
   });
@@ -2624,7 +2693,7 @@ Object.assign(window, {
   openEditModal, saveEditModal, closeEditModal,
   openStartEditModal, saveStartEditModal, closeStartEditModal,
   ctxDuplicate, ctxDelete, initiateProject, completeProjectEnd,
-  showDuplicateConfirm,
+  showDuplicateConfirm, dismissArrowMenu,
 });
 
 // ── BOOT: load from Supabase ──
