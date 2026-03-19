@@ -1146,9 +1146,8 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── BUSINESS CASE ID ──
-// In production pass this via URL param e.g. ?id=uuid
-// For now we upsert a fixed dev record so the page always has data to work with
-const BC_ID = '00000000-0000-0000-0000-000000000001';
+const params = new URLSearchParams(window.location.search);
+const BC_ID = params.get('id') || '00000000-0000-0000-0000-000000000001';
 
 // ── STATE (mirrors DB) ──
 const fields = {};
@@ -1621,14 +1620,13 @@ function confirmBackToGraph() {
 
 function discardAndLeave() {
   document.getElementById('back-modal').style.display = 'none';
-  // Navigate back to the graph — wire up your router here
-  alert('Discarding changes and returning to graph…');
+  window.location.href = 'https://humermatt.github.io/PMTrain/index.html';
 }
 
-function saveAndLeave() {
+async function saveAndLeave() {
   document.getElementById('back-modal').style.display = 'none';
-  // Persist changes here, then navigate
-  alert('Changes saved. Returning to graph…');
+  // Fields auto-save on change, so we just navigate back
+  window.location.href = 'https://humermatt.github.io/PMTrain/index.html';
 }
 
 // ── DOCUMENTS ──
