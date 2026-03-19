@@ -2115,7 +2115,7 @@ function renderArrows() {
       outConns.forEach(outConn => {
         const toPh = getPhaseIdx(outConn.to);
         if (fromPh === -1 || toPh === -1 || fromPh === toPh) return;
-        const lineX = gate.x + 64 + 36;
+        const lineX = gate.x + 64 + 80;
         const ph = PHASES[toPh];
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.classList.add('phase-divider');
@@ -2435,7 +2435,7 @@ function autoLayout() {
     colXMap[col] = curX;
     // Column width based on what's in it
     const hasGateOnly = columns[col].every(k => keyType(k) === 'gate');
-    curX += hasGateOnly ? GATE_W : COL_W;
+    curX += hasGateOnly ? 160 : COL_W;
   });
 
   // Position each element
