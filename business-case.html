@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM.Train — Business Case</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #ededef;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.11);
+    --text: #1a1a1f;
+    --text2: #6b6a68;
+    --text3: #a0a09e;
+    --accent: #5a4fcf;
+
+    --c1: #7c6fcd; --c1l: rgba(124,111,205,0.15);
+    --c2: #5a9e7a; --c2l: rgba(90,158,122,0.15);
+    --c3: #4a8bc4; --c3l: rgba(74,139,196,0.15);
+    --c4: #c4854a; --c4l: rgba(196,133,74,0.15);
+    --c5: #c03030; --c5l: rgba(192,48,48,0.10);
+
+    --radius: 10px;
+  }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BARS ── */
+  .topbar {
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .subbar {
+    min-height: 40px;
+    max-height: 80px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 99;
+  }
+  .topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text3);
+    letter-spacing: -0.2px;
+    line-height: 1;
+  }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border2); }
+  .topbar-project-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .subbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .topbar-goal {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--accent);
+    letter-spacing: 0.01em;
+    opacity: 0.8;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+  }
+
+  .btn {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn-primary {
+    background: #1a1a1f;
+    color: #ffffff;
+    border-color: transparent;
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #2e2e38; color: #ffffff; }
+  .btn-empty {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.18);
+    background: rgba(0,0,0,0.06);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 80px;
+  }
+  .btn-empty:hover { background: rgba(0,0,0,0.11); color: var(--text2); }
+  .btn-empty.active {
+    background: #1a1a1f;
+    color: #ffffff;
+    border-color: transparent;
+  }
+
+  /* ── MAIN SCROLL AREA ── */
+  .page-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 40px 60px;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 20px;
+  }
+  .page-header-left {}
+  .page-header-eyebrow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .page-header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .page-header-subtitle {
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .page-header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+    align-items: flex-end;
+  }
+
+  /* ── STATUS CHIPS ── */
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .status-chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-draft    { background: var(--bg3); color: var(--text3); border-color: var(--border2); }
+  .status-draft .status-chip-dot { background: var(--text3); }
+  .status-review   { background: var(--c4l); color: #8c5a25; border-color: rgba(196,133,74,0.3); }
+  .status-review .status-chip-dot { background: var(--c4); }
+  .status-approved { background: var(--c2l); color: #2c7d52; border-color: rgba(90,158,122,0.3); }
+  .status-approved .status-chip-dot { background: var(--c2); }
+
+  /* ── SECTION LAYOUT ── */
+  .sections-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .section-full { grid-column: 1 / -1; }
+
+  /* ── SECTION CARD ── */
+  .section-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: box-shadow 0.18s;
+  }
+  .section-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+  .section-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .section-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-color-bar {
+    width: 3px;
+    height: 18px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .section-card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.1px;
+  }
+  .section-card-body {
+    padding: 16px 18px;
+  }
+
+  /* ── EDITABLE FIELD ── */
+  .field-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .field-display {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.65;
+    min-height: 36px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: text;
+    transition: all 0.15s;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .field-display:hover {
+    background: var(--bg);
+    border-color: var(--border2);
+  }
+  .field-display.empty { color: var(--text3); font-style: italic; }
+
+  .field-input, .field-textarea {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid rgba(0,0,0,0.18);
+    border-radius: 7px;
+    padding: 8px 10px;
+    outline: none;
+    resize: none;
+    width: 100%;
+    transition: border-color 0.15s;
+    line-height: 1.65;
+    display: none;
+  }
+  .field-input:focus, .field-textarea:focus { border-color: rgba(0,0,0,0.28); }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group:last-child { margin-bottom: 0; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .field-row:last-child { margin-bottom: 0; }
+
+  /* ── TABLE SECTION (costs / benefits) ── */
+  .table-header {
+    display: grid;
+    padding: 0 10px 6px;
+    margin-bottom: 2px;
+  }
+  .table-header-text {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .table-row {
+    display: grid;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    transition: background 0.12s, border-color 0.12s;
+    margin-bottom: 4px;
+  }
+  .table-row:hover {
+    background: var(--bg);
+    border-color: var(--border2);
+  }
+  .table-row-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .table-row-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 1px;
+  }
+  .table-row-amount {
+    font-size: 13px;
+    font-weight: 500;
+    text-align: right;
+  }
+  .table-row-delete {
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text3); border-radius: 4px; transition: all 0.12s;
+    flex-shrink: 0;
+  }
+  .table-row-delete:hover { background: rgba(200,48,48,0.08); color: #c03030; }
+
+  .add-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    color: var(--text3);
+    background: none;
+    border: 1px dashed var(--border2);
+    border-radius: 7px;
+    padding: 7px 12px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 6px;
+  }
+  .add-row-btn:hover { color: var(--text2); background: var(--bg); border-color: rgba(0,0,0,0.18); }
+
+  /* totals row */
+  .totals-row {
+    display: grid;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 10px;
+    border-top: 1px solid var(--border2);
+    margin-top: 8px;
+  }
+  .totals-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .totals-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  /* ── RISK TABLE ── */
+  .risk-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px 22px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    transition: background 0.12s;
+    margin-bottom: 4px;
+  }
+  .risk-row:hover { background: var(--bg); border-color: var(--border2); }
+
+  .risk-badge {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+    text-align: center;
+  }
+  .risk-low    { background: var(--c2l); color: #2c7d52; border-color: rgba(90,158,122,0.3); }
+  .risk-medium { background: var(--c4l); color: #8c5a25; border-color: rgba(196,133,74,0.3); }
+  .risk-high   { background: var(--c5l); color: #922020; border-color: rgba(192,48,48,0.25); }
+
+  /* ── STAKEHOLDER CHIPS ── */
+  .stakeholder-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 32px;
+  }
+  .stakeholder-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 4px 12px 4px 8px;
+    cursor: default;
+  }
+  .stakeholder-avatar {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .stakeholder-remove {
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text3); border-radius: 50%; transition: all 0.12s;
+    font-size: 11px; padding: 0; line-height: 1;
+  }
+  .stakeholder-remove:hover { background: rgba(200,48,48,0.1); color: #c03030; }
+
+  /* ── SUMMARY METRICS ── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .metric-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    transition: box-shadow 0.15s;
+  }
+  .metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .metric-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .metric-sub {
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .metric-positive { color: #2c7d52; }
+  .metric-negative { color: #c03030; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 24px;
+    width: 360px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .modal-header {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .modal-field label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .modal-field input, .modal-field textarea, .modal-field select {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    padding: 8px 10px;
+    outline: none;
+    resize: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .modal-field input:focus, .modal-field textarea:focus, .modal-field select:focus {
+    border-color: rgba(0,0,0,0.25);
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+  .modal-cancel {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .modal-cancel:hover { background: var(--bg3); }
+  .modal-save {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: none;
+    background: #1a1a1f;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-save:hover { background: #2e2e38; }
+
+  /* ── DIVIDER ── */
+  .section-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+  }
+
+  /* ── SCROLLBAR ── */
+  .page-body::-webkit-scrollbar { width: 6px; }
+  .page-body::-webkit-scrollbar-track { background: transparent; }
+  .page-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── DOCUMENT CARDS ── */
+  .doc-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    background: var(--bg);
+  }
+  .doc-card:hover { border-color: var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .doc-icon {
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 15px;
+  }
+  .doc-card-body { flex: 1; min-width: 0; }
+  .doc-card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .doc-card-content {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .doc-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .doc-type-badge {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .doc-card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .doc-action-btn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text3); border-radius: 5px; transition: all 0.12s;
+  }
+  .doc-action-btn:hover { background: var(--bg3); color: var(--text); }
+  .doc-action-btn.danger:hover { background: rgba(200,48,48,0.08); color: #c03030; }
+
+
+  .timeline-bar-wrap {
+    background: var(--bg3);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .timeline-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-title">PM.Train</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-project-title">Project New Technology</span>
+  <div class="topbar-actions">
+    <span id="doc-status-chip" class="status-chip status-draft">
+      <span class="status-chip-dot"></span>Draft
+    </span>
+    <button class="btn" onclick="cycleStatus()">Change Status</button>
+    <button class="btn btn-primary" onclick="exportDoc()">Export PDF</button>
+  </div>
+</div>
+
+<!-- SUB BAR -->
+<div class="subbar">
+  <div class="topbar-goal">The goal of this project is to get projects back on the rails — delivering clarity, momentum, and confidence to every stakeholder by transforming scattered effort into a single, unified direction that the whole team can rally behind and drive forward together.</div>
+  <div class="subbar-actions">
+    <button class="btn-empty" onclick="confirmBackToGraph()">← Back to Graph</button>
+  </div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-eyebrow">Project Initiation</div>
+      <div class="page-header-title">Business Case</div>
+      <div class="page-header-subtitle">Define the justification, costs, benefits and risks for this project.</div>
+    </div>
+    <div class="page-header-actions">
+      <span style="font-size:11px; color:var(--text3);">Last edited <strong style="color:var(--text2);">just now</strong></span>
+      <div id="approver-wrap" style="position:relative;">
+        <div id="approver-display" onclick="toggleApproverPopout()" style="font-size:11px; color:var(--text3); cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 8px; border-radius:6px; border:1px solid transparent; transition:all 0.15s;" onmouseenter="this.style.background='var(--bg3)';this.style.borderColor='var(--border2)';" onmouseleave="this.style.background='transparent';this.style.borderColor='transparent';">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Approver: <strong id="approver-name" style="color:var(--text2);">None</strong>
+        </div>
+        <!-- Popout -->
+        <div id="approver-popout" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--border2); border-radius:10px; padding:14px; width:240px; box-shadow:0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.07); z-index:200;">
+          <div style="font-family:'Syne',sans-serif; font-size:12px; font-weight:700; color:var(--text); margin-bottom:10px;">Assign Approver</div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <label style="font-size:9px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3);">Name</label>
+            <input id="approver-input" type="text" placeholder="Enter approver name…" style="font-family:'Geist',sans-serif; font-size:13px; color:var(--text); background:var(--bg3); border:1px solid var(--border2); border-radius:7px; padding:7px 10px; outline:none; width:100%; transition:border-color 0.15s;" onfocus="this.style.borderColor='rgba(0,0,0,0.25)'" onblur="this.style.borderColor='var(--border2)'" onkeydown="if(event.key==='Enter') saveApprover(); if(event.key==='Escape') closeApproverPopout();" />
+          </div>
+          <div style="display:flex; gap:6px; margin-top:12px; justify-content:flex-end;">
+            <button onclick="clearApprover()" style="font-family:'Geist',sans-serif; font-size:11px; padding:5px 12px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text3); cursor:pointer;" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">Clear</button>
+            <button onclick="saveApprover()" style="font-family:'Geist',sans-serif; font-size:11px; font-weight:500; padding:5px 12px; border-radius:6px; border:none; background:#1a1a1f; color:#fff; cursor:pointer;" onmouseenter="this.style.background='#2e2e38'" onmouseleave="this.style.background='#1a1a1f'">Assign</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Metrics -->
+  <div class="metrics-row" id="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Total Cost</div>
+      <div class="metric-value" id="metric-total-cost">—</div>
+      <div class="metric-sub">Estimated investment</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total Benefit</div>
+      <div class="metric-value metric-positive" id="metric-total-benefit">—</div>
+      <div class="metric-sub">Expected return</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Net Value</div>
+      <div class="metric-value" id="metric-net-value">—</div>
+      <div class="metric-sub">Benefit minus cost</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">ROI</div>
+      <div class="metric-value" id="metric-roi">—</div>
+      <div class="metric-sub">Return on investment</div>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="sections-grid">
+
+    <!-- Executive Summary -->
+    <div class="section-card section-full">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--c1)"></div>
+          <div class="section-card-title">Executive Summary</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="field-group">
+          <div class="field-label">Summary</div>
+          <div class="field-display empty" id="f-summary" data-placeholder="Summarise the project purpose, expected outcomes and the reason it should be approved…" onclick="activateField('summary')">Summarise the project purpose, expected outcomes and the reason it should be approved…</div>
+          <textarea class="field-textarea" id="fi-summary" rows="4" onblur="deactivateField('summary')" oninput="saveField('summary')"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Problem / Opportunity -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--c4)"></div>
+          <div class="section-card-title">Problem / Opportunity</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="field-group">
+          <div class="field-label">Problem Statement</div>
+          <div class="field-display empty" id="f-problem" data-placeholder="What problem does this project solve or what opportunity does it capture?" onclick="activateField('problem')">What problem does this project solve or what opportunity does it capture?</div>
+          <textarea class="field-textarea" id="fi-problem" rows="3" onblur="deactivateField('problem')" oninput="saveField('problem')"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Current Situation</div>
+          <div class="field-display empty" id="f-current" data-placeholder="Describe the current state and why action is needed…" onclick="activateField('current')">Describe the current state and why action is needed…</div>
+          <textarea class="field-textarea" id="fi-current" rows="3" onblur="deactivateField('current')" oninput="saveField('current')"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategic Alignment -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--c3)"></div>
+          <div class="section-card-title">Strategic Alignment</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="field-group">
+          <div class="field-label">Strategic Objectives</div>
+          <div class="field-display empty" id="f-strategic" data-placeholder="How does this project align with organisational goals and strategy?" onclick="activateField('strategic')">How does this project align with organisational goals and strategy?</div>
+          <textarea class="field-textarea" id="fi-strategic" rows="3" onblur="deactivateField('strategic')" oninput="saveField('strategic')"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Success Criteria</div>
+          <div class="field-display empty" id="f-success" data-placeholder="What does success look like? How will it be measured?" onclick="activateField('success')">What does success look like? How will it be measured?</div>
+          <textarea class="field-textarea" id="fi-success" rows="3" onblur="deactivateField('success')" oninput="saveField('success')"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Costs -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--c5)"></div>
+          <div class="section-card-title">Costs</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div style="display:grid; grid-template-columns:1fr 100px 22px; gap:8px; padding:0 10px 6px;">
+          <div class="table-header-text">Item</div>
+          <div class="table-header-text" style="text-align:right">Amount</div>
+          <div></div>
+        </div>
+        <div id="cost-rows"></div>
+        <div class="totals-row" style="grid-template-columns:1fr 100px 22px;">
+          <div class="totals-label">Total</div>
+          <div class="totals-amount" id="costs-total" style="color:var(--c5)">—</div>
+          <div></div>
+        </div>
+        <button class="add-row-btn" onclick="openModal('cost')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add cost item
+        </button>
+      </div>
+    </div>
+
+    <!-- Benefits -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--c2)"></div>
+          <div class="section-card-title">Benefits</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div style="display:grid; grid-template-columns:1fr 100px 22px; gap:8px; padding:0 10px 6px;">
+          <div class="table-header-text">Item</div>
+          <div class="table-header-text" style="text-align:right">Value</div>
+          <div></div>
+        </div>
+        <div id="benefit-rows"></div>
+        <div class="totals-row" style="grid-template-columns:1fr 100px 22px;">
+          <div class="totals-label">Total</div>
+          <div class="totals-amount" id="benefits-total" style="color:var(--c2)">—</div>
+          <div></div>
+        </div>
+        <button class="add-row-btn" onclick="openModal('benefit')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add benefit item
+        </button>
+      </div>
+    </div>
+
+    <!-- Risks -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:#c4854a"></div>
+          <div class="section-card-title">Key Risks</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div style="display:grid; grid-template-columns:1fr 80px 80px 22px; gap:8px; padding:0 10px 6px;">
+          <div class="table-header-text">Risk</div>
+          <div class="table-header-text" style="text-align:center">Likelihood</div>
+          <div class="table-header-text" style="text-align:center">Impact</div>
+          <div></div>
+        </div>
+        <div id="risk-rows"></div>
+        <button class="add-row-btn" onclick="openModal('risk')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add risk
+        </button>
+      </div>
+    </div>
+
+    <!-- Assumptions & Constraints -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--text3)"></div>
+          <div class="section-card-title">Assumptions &amp; Constraints</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="field-group">
+          <div class="field-label">Assumptions</div>
+          <div class="field-display empty" id="f-assumptions" data-placeholder="List key assumptions being made for this business case…" onclick="activateField('assumptions')">List key assumptions being made for this business case…</div>
+          <textarea class="field-textarea" id="fi-assumptions" rows="3" onblur="deactivateField('assumptions')" oninput="saveField('assumptions')"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Constraints</div>
+          <div class="field-display empty" id="f-constraints" data-placeholder="List limitations such as budget caps, deadlines, regulatory requirements…" onclick="activateField('constraints')">List limitations such as budget caps, deadlines, regulatory requirements…</div>
+          <textarea class="field-textarea" id="fi-constraints" rows="3" onblur="deactivateField('constraints')" oninput="saveField('constraints')"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommended Option -->
+    <div class="section-card section-full">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--accent)"></div>
+          <div class="section-card-title">Recommended Option &amp; Conclusion</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="field-row">
+          <div class="field-group" style="margin:0">
+            <div class="field-label">Recommended Option</div>
+            <div class="field-display empty" id="f-option" data-placeholder="Describe the recommended approach or solution…" onclick="activateField('option')">Describe the recommended approach or solution…</div>
+            <textarea class="field-textarea" id="fi-option" rows="3" onblur="deactivateField('option')" oninput="saveField('option')"></textarea>
+          </div>
+          <div class="field-group" style="margin:0">
+            <div class="field-label">Alternatives Considered</div>
+            <div class="field-display empty" id="f-alternatives" data-placeholder="List other options considered and why they were not selected…" onclick="activateField('alternatives')">List other options considered and why they were not selected…</div>
+            <textarea class="field-textarea" id="fi-alternatives" rows="3" onblur="deactivateField('alternatives')" oninput="saveField('alternatives')"></textarea>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Conclusion &amp; Recommendation</div>
+          <div class="field-display empty" id="f-conclusion" data-placeholder="Provide a final recommendation and call to action for approvers…" onclick="activateField('conclusion')">Provide a final recommendation and call to action for approvers…</div>
+          <textarea class="field-textarea" id="fi-conclusion" rows="3" onblur="deactivateField('conclusion')" oninput="saveField('conclusion')"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stakeholders -->
+    <div class="section-card section-full">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--c3)"></div>
+          <div class="section-card-title">Stakeholders</div>
+        </div>
+        <button class="btn" onclick="openModal('stakeholder')">+ Add</button>
+      </div>
+      <div class="section-card-body">
+        <div class="stakeholder-list" id="stakeholder-list">
+          <span style="font-size:12px; color:var(--text3); font-style:italic; padding:4px 2px;">No stakeholders added yet.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents & Notes -->
+    <div class="section-card section-full">
+      <div class="section-card-header">
+        <div class="section-card-header-left">
+          <div class="section-color-bar" style="background:var(--text3)"></div>
+          <div class="section-card-title">Documents &amp; Notes</div>
+        </div>
+        <button class="btn" onclick="openModal('doc')">+ Add</button>
+      </div>
+      <div class="section-card-body">
+        <div id="doc-list-empty" style="font-size:12px; color:var(--text3); font-style:italic; padding:4px 2px;">No documents or notes added yet.</div>
+        <div id="doc-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /sections-grid -->
+</div><!-- /page-body -->
+
+
+<!-- DOCUMENT / NOTE MODAL -->
+<div class="modal-overlay" id="doc-modal" style="display:none" onclick="closeModal('doc-modal', event)">
+  <div class="modal" style="width:400px;" onclick="event.stopPropagation()">
+    <div class="modal-header" id="doc-modal-title">Add Document / Note</div>
+    <div class="modal-field">
+      <label>Type</label>
+      <select id="doc-type" onchange="onDocTypeChange()">
+        <option value="note">📝 Note</option>
+        <option value="decision">✅ Decision</option>
+        <option value="meeting">🗓 Meeting Notes</option>
+        <option value="reference">🔗 Reference / Link</option>
+        <option value="attachment">📎 Attachment Reference</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Title</label>
+      <input type="text" id="doc-title" placeholder="Give this a short title" />
+    </div>
+    <div class="modal-field" id="doc-content-field">
+      <label>Content</label>
+      <textarea id="doc-content" rows="5" placeholder="Write your note, decision, or details here…"></textarea>
+    </div>
+    <div class="modal-field" id="doc-url-field" style="display:none">
+      <label>URL</label>
+      <input type="text" id="doc-url" placeholder="https://…" />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('doc-modal').style.display='none'">Cancel</button>
+      <button class="modal-save" onclick="saveDocModal()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT DOCUMENT MODAL -->
+<div class="modal-overlay" id="doc-edit-modal" style="display:none" onclick="closeModal('doc-edit-modal', event)">
+  <div class="modal" style="width:400px;" onclick="event.stopPropagation()">
+    <div class="modal-header">Edit Document / Note</div>
+    <div class="modal-field">
+      <label>Title</label>
+      <input type="text" id="doc-edit-title" />
+    </div>
+    <div class="modal-field" id="doc-edit-content-field">
+      <label>Content</label>
+      <textarea id="doc-edit-content" rows="5"></textarea>
+    </div>
+    <div class="modal-field" id="doc-edit-url-field" style="display:none">
+      <label>URL</label>
+      <input type="text" id="doc-edit-url" />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('doc-edit-modal').style.display='none'">Cancel</button>
+      <button class="modal-save" onclick="saveDocEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- BACK TO GRAPH MODAL -->
+<div class="modal-overlay" id="back-modal" style="display:none" onclick="closeModal('back-modal', event)">
+  <div class="modal" style="width:340px;" onclick="event.stopPropagation()">
+    <div class="modal-header">Return to Graph?</div>
+    <p style="font-size:13px; color:var(--text2); line-height:1.6; margin-top:-4px;">
+      You have unsaved changes on this page. What would you like to do before leaving?
+    </p>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="modal-cancel" onclick="document.getElementById('back-modal').style.display='none'">Stay here</button>
+      <div style="display:flex; gap:8px;">
+        <button class="modal-cancel" style="color:#c03030; border-color:rgba(192,48,48,0.25);" onclick="discardAndLeave()">Discard</button>
+        <button class="modal-save" onclick="saveAndLeave()">Save &amp; Return</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="item-modal" style="display:none" onclick="closeModal('item-modal', event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header" id="item-modal-title">Add Cost Item</div>
+    <div class="modal-field">
+      <label>Description</label>
+      <input type="text" id="item-desc" placeholder="e.g. Software licences" />
+    </div>
+    <div class="modal-field">
+      <label>Category</label>
+      <input type="text" id="item-cat" placeholder="e.g. Technology, People, Infrastructure" />
+    </div>
+    <div class="modal-field">
+      <label>Amount ($)</label>
+      <input type="number" id="item-amount" placeholder="0" min="0" />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('item-modal').style.display='none'">Cancel</button>
+      <button class="modal-save" onclick="saveItemModal()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- RISK MODAL -->
+<div class="modal-overlay" id="risk-modal" style="display:none" onclick="closeModal('risk-modal', event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">Add Risk</div>
+    <div class="modal-field">
+      <label>Risk Description</label>
+      <textarea id="risk-desc" rows="3" placeholder="Describe the risk…"></textarea>
+    </div>
+    <div class="modal-field">
+      <label>Likelihood</label>
+      <select id="risk-likelihood">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Impact</label>
+      <select id="risk-impact">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('risk-modal').style.display='none'">Cancel</button>
+      <button class="modal-save" onclick="saveRiskModal()">Add Risk</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAKEHOLDER MODAL -->
+<div class="modal-overlay" id="stakeholder-modal" style="display:none" onclick="closeModal('stakeholder-modal', event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">Add Stakeholder</div>
+    <div class="modal-field">
+      <label>Name</label>
+      <input type="text" id="sh-name" placeholder="Full name" />
+    </div>
+    <div class="modal-field">
+      <label>Role / Title</label>
+      <input type="text" id="sh-role" placeholder="e.g. Project Sponsor" />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('stakeholder-modal').style.display='none'">Cancel</button>
+      <button class="modal-save" onclick="saveStakeholderModal()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ── SUPABASE ──
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── BUSINESS CASE ID ──
+const params = new URLSearchParams(window.location.search);
+const BC_ID = params.get('id') || '00000000-0000-0000-0000-000000000001';
+
+// ── STATE (mirrors DB) ──
+const fields = {};
+let costs = [];
+let benefits = [];
+let risks = [];
+let stakeholders = [];
+let docs = [];
+let editingDocId = null;
+
+// ── TOAST ──
+function showToast(msg, type = 'saved') {
+  let toast = document.getElementById('sb-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sb-toast';
+    toast.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+      padding:8px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:12px;
+      font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;`;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.background = type === 'error' ? '#c03030' : '#1a1a1f';
+  toast.style.color = '#fff';
+  toast.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.style.opacity = '0', 2200);
+}
+
+// ── LOAD ALL DATA FROM SUPABASE ──
+async function loadAll() {
+  // Ensure a business_case row exists
+  const { data: bc, error: bcErr } = await sb
+    .from('business_cases')
+    .upsert({ id: BC_ID }, { onConflict: 'id', ignoreDuplicates: true })
+    .select()
+    .single();
+
+  // Fetch the row
+  const { data: row } = await sb
+    .from('business_cases')
+    .select('*')
+    .eq('id', BC_ID)
+    .single();
+
+  if (row) {
+    // Restore text fields
+    const textFields = ['summary','problem','current_situation','strategic_objectives',
+      'success_criteria','assumptions','constraints','recommended_option','alternatives','conclusion'];
+    textFields.forEach(key => {
+      const uiKey = key === 'current_situation' ? 'current'
+                  : key === 'strategic_objectives' ? 'strategic'
+                  : key === 'recommended_option' ? 'option'
+                  : key;
+      if (row[key]) {
+        fields[uiKey] = row[key];
+        const display = document.getElementById('f-' + uiKey);
+        if (display) { display.textContent = row[key]; display.classList.remove('empty'); }
+      }
+    });
+
+    // Status
+    if (row.status) {
+      const idx = STATUSES.findIndex(s => s.key === row.status);
+      if (idx > -1) { statusIdx = idx; applyStatus(); }
+    }
+
+    // Approver
+    if (row.approver) {
+      document.getElementById('approver-name').textContent = row.approver;
+      document.getElementById('approver-name').style.color = 'var(--text)';
+    }
+
+    // Updated at
+    if (row.updated_at) {
+      const d = new Date(row.updated_at);
+      document.querySelector('.page-header-actions span').innerHTML =
+        `Last edited <strong style="color:var(--text2)">${d.toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</strong>`;
+    }
+  }
+
+  // Load related tables in parallel
+  const [costsRes, benefitsRes, risksRes, shRes, docsRes] = await Promise.all([
+    sb.from('cost_items').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('benefit_items').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('risks').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('stakeholders').select('*').eq('business_case_id', BC_ID).order('created_at'),
+    sb.from('documents').select('*').eq('business_case_id', BC_ID).order('created_at'),
+  ]);
+
+  costs        = costsRes.data    || [];
+  benefits     = benefitsRes.data || [];
+  risks        = risksRes.data    || [];
+  stakeholders = shRes.data       || [];
+  docs         = docsRes.data     || [];
+
+  renderCosts(); renderBenefits(); renderRisks();
+  renderStakeholders(); renderDocs(); updateMetrics();
+}
+
+// ── SAVE MAIN FIELDS TO SUPABASE ──
+let saveTimer = null;
+async function persistField(uiKey, value) {
+  const colMap = {
+    summary: 'summary', problem: 'problem', current: 'current_situation',
+    strategic: 'strategic_objectives', success: 'success_criteria',
+    assumptions: 'assumptions', constraints: 'constraints',
+    option: 'recommended_option', alternatives: 'alternatives', conclusion: 'conclusion',
+  };
+  const col = colMap[uiKey];
+  if (!col) return;
+  const { error } = await sb.from('business_cases')
+    .update({ [col]: value, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID);
+  if (error) { showToast('Save failed', 'error'); console.error(error); }
+  else showToast('Saved');
+}
+
+// ── STATE ──
+let itemModalType = 'cost';
+
+const AVATAR_COLORS = ['#7c6fcd','#5a9e7a','#4a8bc4','#c4854a','#c03030','#3a9ebf','#c45a8a'];
+const STATUSES = [
+  { key: 'draft',    label: 'Draft',    cls: 'status-draft'    },
+  { key: 'review',   label: 'In Review',cls: 'status-review'   },
+  { key: 'approved', label: 'Approved', cls: 'status-approved' },
+];
+let statusIdx = 0;
+
+// ── EDITABLE FIELDS ──
+function activateField(key) {
+  const display = document.getElementById('f-' + key);
+  const input   = document.getElementById('fi-' + key);
+  display.style.display = 'none';
+  input.style.display = 'block';
+  input.value = fields[key] || '';
+  input.focus();
+}
+
+function deactivateField(key) {
+  const display = document.getElementById('f-' + key);
+  const input   = document.getElementById('fi-' + key);
+  const val = input.value.trim();
+  fields[key] = val;
+  input.style.display = 'none';
+  display.style.display = 'block';
+  if (val) {
+    display.textContent = val;
+    display.classList.remove('empty');
+  } else {
+    display.textContent = display.dataset.placeholder;
+    display.classList.add('empty');
+  }
+}
+
+function saveField(key) {
+  fields[key] = document.getElementById('fi-' + key).value;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => persistField(key, fields[key]), 800);
+}
+
+// ── STATUS ──
+function cycleStatus() {
+  statusIdx = (statusIdx + 1) % STATUSES.length;
+  applyStatus();
+  sb.from('business_cases')
+    .update({ status: STATUSES[statusIdx].key, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID)
+    .then(({ error }) => error ? showToast('Save failed','error') : showToast('Status updated'));
+}
+
+function applyStatus() {
+  const s = STATUSES[statusIdx];
+  const chip = document.getElementById('doc-status-chip');
+  chip.className = 'status-chip ' + s.cls;
+  chip.innerHTML = `<span class="status-chip-dot"></span>${s.label}`;
+}
+
+// ── TIMESTAMP ──
+function updateTimestamp() {
+  const now = new Date();
+  document.querySelector('.page-header-actions span').innerHTML =
+    `Last edited <strong style="color:var(--text2)">just now</strong>`;
+  sb.from('business_cases')
+    .update({ updated_at: now.toISOString() })
+    .eq('id', BC_ID).then(() => {});
+}
+
+// ── MODAL ──
+function openModal(type) {
+  itemModalType = type;
+  if (type === 'cost' || type === 'benefit') {
+    document.getElementById('item-modal-title').textContent = type === 'cost' ? 'Add Cost Item' : 'Add Benefit Item';
+    document.getElementById('item-desc').value = '';
+    document.getElementById('item-cat').value  = '';
+    document.getElementById('item-amount').value = '';
+    document.getElementById('item-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('item-desc').focus(), 50);
+  } else if (type === 'risk') {
+    document.getElementById('risk-desc').value = '';
+    document.getElementById('risk-likelihood').value = 'medium';
+    document.getElementById('risk-impact').value = 'medium';
+    document.getElementById('risk-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('risk-desc').focus(), 50);
+  } else if (type === 'stakeholder') {
+    document.getElementById('sh-name').value = '';
+    document.getElementById('sh-role').value = '';
+    document.getElementById('stakeholder-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('sh-name').focus(), 50);
+  }
+}
+
+function closeModal(id, e) {
+  if (e.target === document.getElementById(id))
+    document.getElementById(id).style.display = 'none';
+}
+
+async function saveItemModal() {
+  const desc   = document.getElementById('item-desc').value.trim();
+  const cat    = document.getElementById('item-cat').value.trim();
+  const amount = parseFloat(document.getElementById('item-amount').value) || 0;
+  if (!desc) { document.getElementById('item-desc').focus(); return; }
+
+  const table = itemModalType === 'cost' ? 'cost_items' : 'benefit_items';
+  const { data, error } = await sb.from(table)
+    .insert({ business_case_id: BC_ID, description: desc, category: cat, amount })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+
+  if (itemModalType === 'cost') { costs.push(data); renderCosts(); }
+  else { benefits.push(data); renderBenefits(); }
+
+  document.getElementById('item-modal').style.display = 'none';
+  updateMetrics(); showToast('Saved');
+}
+
+async function saveRiskModal() {
+  const desc = document.getElementById('risk-desc').value.trim();
+  if (!desc) { document.getElementById('risk-desc').focus(); return; }
+  const likelihood = document.getElementById('risk-likelihood').value;
+  const impact     = document.getElementById('risk-impact').value;
+
+  const { data, error } = await sb.from('risks')
+    .insert({ business_case_id: BC_ID, description: desc, likelihood, impact })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+  risks.push(data);
+  renderRisks();
+  document.getElementById('risk-modal').style.display = 'none';
+  showToast('Saved');
+}
+
+async function saveStakeholderModal() {
+  const name = document.getElementById('sh-name').value.trim();
+  if (!name) { document.getElementById('sh-name').focus(); return; }
+  const role  = document.getElementById('sh-role').value.trim();
+  const color = AVATAR_COLORS[stakeholders.length % AVATAR_COLORS.length];
+
+  const { data, error } = await sb.from('stakeholders')
+    .insert({ business_case_id: BC_ID, name, role, color })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+  stakeholders.push(data);
+  renderStakeholders();
+  document.getElementById('stakeholder-modal').style.display = 'none';
+  showToast('Saved');
+}
+
+// ── RENDERERS ──
+function fmt(n) {
+  if (n === 0) return '$0';
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function renderCosts() {
+  const container = document.getElementById('cost-rows');
+  container.innerHTML = '';
+  costs.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'table-row';
+    row.style.gridTemplateColumns = '1fr 100px 22px';
+    row.innerHTML = `
+      <div>
+        <div class="table-row-text">${c.description}</div>
+        ${c.category ? `<div class="table-row-sub">${c.category}</div>` : ''}
+      </div>
+      <div class="table-row-amount" style="color:var(--c5)">${fmt(c.amount)}</div>
+      <button class="table-row-delete" onclick="deleteItem('cost', '${c.id}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    container.appendChild(row);
+  });
+  const total = costs.reduce((s, c) => s + (c.amount || 0), 0);
+  document.getElementById('costs-total').textContent = costs.length ? fmt(total) : '—';
+}
+
+function renderBenefits() {
+  const container = document.getElementById('benefit-rows');
+  container.innerHTML = '';
+  benefits.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'table-row';
+    row.style.gridTemplateColumns = '1fr 100px 22px';
+    row.innerHTML = `
+      <div>
+        <div class="table-row-text">${b.description}</div>
+        ${b.category ? `<div class="table-row-sub">${b.category}</div>` : ''}
+      </div>
+      <div class="table-row-amount" style="color:var(--c2)">${fmt(b.amount)}</div>
+      <button class="table-row-delete" onclick="deleteItem('benefit', '${b.id}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    container.appendChild(row);
+  });
+  const total = benefits.reduce((s, b) => s + (b.amount || 0), 0);
+  document.getElementById('benefits-total').textContent = benefits.length ? fmt(total) : '—';
+}
+
+function renderRisks() {
+  const container = document.getElementById('risk-rows');
+  container.innerHTML = '';
+  risks.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'risk-row';
+    row.innerHTML = `
+      <div class="table-row-text">${r.description}</div>
+      <div style="text-align:center"><span class="risk-badge risk-${r.likelihood}">${r.likelihood}</span></div>
+      <div style="text-align:center"><span class="risk-badge risk-${r.impact}">${r.impact}</span></div>
+      <button class="table-row-delete" onclick="deleteRisk('${r.id}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function renderStakeholders() {
+  const container = document.getElementById('stakeholder-list');
+  if (!stakeholders.length) {
+    container.innerHTML = '<span style="font-size:12px; color:var(--text3); font-style:italic; padding:4px 2px;">No stakeholders added yet.</span>';
+    return;
+  }
+  container.innerHTML = '';
+  stakeholders.forEach(s => {
+    const initials = s.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const chip = document.createElement('div');
+    chip.className = 'stakeholder-chip';
+    chip.innerHTML = `
+      <div class="stakeholder-avatar" style="background:${s.color}">${initials}</div>
+      <span>${s.name}${s.role ? ` · <span style="color:var(--text3)">${s.role}</span>` : ''}</span>
+      <button class="stakeholder-remove" onclick="deleteStakeholder(${s.id})" title="Remove">×</button>
+    `;
+    container.appendChild(chip);
+  });
+}
+
+// ── DELETE ──
+async function deleteItem(type, id) {
+  const table = type === 'cost' ? 'cost_items' : 'benefit_items';
+  const { error } = await sb.from(table).delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  if (type === 'cost') { costs = costs.filter(c => c.id !== id); renderCosts(); }
+  else { benefits = benefits.filter(b => b.id !== id); renderBenefits(); }
+  updateMetrics(); showToast('Deleted');
+}
+
+async function deleteRisk(id) {
+  const { error } = await sb.from('risks').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  risks = risks.filter(r => r.id !== id);
+  renderRisks(); showToast('Deleted');
+}
+
+async function deleteStakeholder(id) {
+  const { error } = await sb.from('stakeholders').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  stakeholders = stakeholders.filter(s => s.id !== id);
+  renderStakeholders(); showToast('Deleted');
+}
+
+// ── METRICS ──
+function updateMetrics() {
+  const totalCost    = costs.reduce((s, c) => s + c.amount, 0);
+  const totalBenefit = benefits.reduce((s, b) => s + b.amount, 0);
+  const netValue     = totalBenefit - totalCost;
+  const roi          = totalCost > 0 ? ((netValue / totalCost) * 100).toFixed(0) : null;
+
+  const costEl    = document.getElementById('metric-total-cost');
+  const benEl     = document.getElementById('metric-total-benefit');
+  const netEl     = document.getElementById('metric-net-value');
+  const roiEl     = document.getElementById('metric-roi');
+
+  costEl.textContent = (costs.length || benefits.length) ? fmt(totalCost) : '—';
+  benEl.textContent  = (costs.length || benefits.length) ? fmt(totalBenefit) : '—';
+
+  if (costs.length || benefits.length) {
+    netEl.textContent = fmt(netValue);
+    netEl.className   = 'metric-value ' + (netValue >= 0 ? 'metric-positive' : 'metric-negative');
+    roiEl.textContent = roi !== null ? roi + '%' : '—';
+    roiEl.className   = 'metric-value ' + (roi !== null ? (parseFloat(roi) >= 0 ? 'metric-positive' : 'metric-negative') : '');
+  } else {
+    netEl.textContent = '—';
+    netEl.className   = 'metric-value';
+    roiEl.textContent = '—';
+    roiEl.className   = 'metric-value';
+  }
+}
+
+// ── EXPORT (stub) ──
+function exportDoc() {
+  alert('Export to PDF — connect your PDF generation service here.');
+}
+
+// ── APPROVER ──
+function toggleApproverPopout() {
+  const popout = document.getElementById('approver-popout');
+  const isOpen = popout.style.display === 'block';
+  if (isOpen) {
+    closeApproverPopout();
+  } else {
+    const current = document.getElementById('approver-name').textContent;
+    document.getElementById('approver-input').value = current === 'None' ? '' : current;
+    popout.style.display = 'block';
+    setTimeout(() => document.getElementById('approver-input').focus(), 50);
+  }
+}
+
+function closeApproverPopout() {
+  document.getElementById('approver-popout').style.display = 'none';
+}
+
+async function saveApprover() {
+  const name = document.getElementById('approver-input').value.trim();
+  document.getElementById('approver-name').textContent = name || 'None';
+  document.getElementById('approver-name').style.color = name ? 'var(--text)' : 'var(--text2)';
+  closeApproverPopout();
+  const { error } = await sb.from('business_cases')
+    .update({ approver: name || null, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID);
+  if (error) showToast('Save failed', 'error');
+  else showToast('Approver updated');
+}
+
+async function clearApprover() {
+  document.getElementById('approver-input').value = '';
+  document.getElementById('approver-name').textContent = 'None';
+  document.getElementById('approver-name').style.color = 'var(--text2)';
+  closeApproverPopout();
+  await sb.from('business_cases')
+    .update({ approver: null, updated_at: new Date().toISOString() })
+    .eq('id', BC_ID);
+  showToast('Approver cleared');
+}
+
+// Close approver popout when clicking outside
+document.addEventListener('mousedown', e => {
+  const wrap = document.getElementById('approver-wrap');
+  if (wrap && !wrap.contains(e.target)) closeApproverPopout();
+});
+
+// ── BACK TO GRAPH ──
+function confirmBackToGraph() {
+  document.getElementById('back-modal').style.display = 'flex';
+}
+
+function discardAndLeave() {
+  document.getElementById('back-modal').style.display = 'none';
+  window.location.href = 'https://humermatt.github.io/PMTrain/index.html';
+}
+
+async function saveAndLeave() {
+  document.getElementById('back-modal').style.display = 'none';
+  // Fields auto-save on change, so we just navigate back
+  window.location.href = 'https://humermatt.github.io/PMTrain/index.html';
+}
+
+// ── DOCUMENTS ──
+const DOC_TYPES = {
+  note:       { label: 'Note',       emoji: '📝', color: '#7c6fcd', light: 'rgba(124,111,205,0.12)' },
+  decision:   { label: 'Decision',   emoji: '✅', color: '#5a9e7a', light: 'rgba(90,158,122,0.12)'  },
+  meeting:    { label: 'Meeting',    emoji: '🗓', color: '#4a8bc4', light: 'rgba(74,139,196,0.12)'  },
+  reference:  { label: 'Reference',  emoji: '🔗', color: '#c4854a', light: 'rgba(196,133,74,0.12)'  },
+  attachment: { label: 'Attachment', emoji: '📎', color: '#888780', light: 'rgba(136,135,128,0.12)' },
+};
+
+function onDocTypeChange() {
+  const type = document.getElementById('doc-type').value;
+  const isRef = type === 'reference' || type === 'attachment';
+  document.getElementById('doc-content-field').style.display = isRef ? 'none' : 'flex';
+  document.getElementById('doc-url-field').style.display     = isRef ? 'flex' : 'none';
+  document.getElementById('doc-content').placeholder =
+    type === 'meeting'  ? 'Attendees, agenda, key outcomes…'  :
+    type === 'decision' ? 'What was decided and why?'         :
+    'Write your note or details here…';
+}
+
+async function saveDocModal() {
+  const type    = document.getElementById('doc-type').value;
+  const title   = document.getElementById('doc-title').value.trim();
+  const content = document.getElementById('doc-content').value.trim();
+  const url     = document.getElementById('doc-url').value.trim();
+  const isRef   = type === 'reference' || type === 'attachment';
+  if (!title) { document.getElementById('doc-title').focus(); return; }
+  if (isRef && !url && !content) { document.getElementById('doc-url').focus(); return; }
+
+  const { data, error } = await sb.from('documents')
+    .insert({ business_case_id: BC_ID, type, title, content, url })
+    .select().single();
+
+  if (error) { showToast('Save failed', 'error'); console.error(error); return; }
+  docs.push(data);
+  renderDocs();
+  document.getElementById('doc-modal').style.display = 'none';
+  showToast('Saved');
+}
+
+async function saveDocEdit() {
+  const doc = docs.find(d => d.id === editingDocId);
+  if (!doc) return;
+  const title   = document.getElementById('doc-edit-title').value.trim() || doc.title;
+  const content = document.getElementById('doc-edit-content').value.trim();
+  const url     = document.getElementById('doc-edit-url').value.trim();
+
+  const { error } = await sb.from('documents')
+    .update({ title, content, url })
+    .eq('id', editingDocId);
+
+  if (error) { showToast('Save failed', 'error'); return; }
+  doc.title = title; doc.content = content; doc.url = url;
+  renderDocs();
+  document.getElementById('doc-edit-modal').style.display = 'none';
+  editingDocId = null;
+  showToast('Saved');
+}
+
+async function deleteDoc(id) {
+  const { error } = await sb.from('documents').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  docs = docs.filter(d => d.id !== id);
+  renderDocs(); showToast('Deleted');
+}
+
+function renderDocs() {
+  const list    = document.getElementById('doc-list');
+  const empty   = document.getElementById('doc-list-empty');
+  list.innerHTML = '';
+  if (!docs.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  docs.forEach(doc => {
+    const t    = DOC_TYPES[doc.type] || DOC_TYPES.note;
+    const isRef = doc.type === 'reference' || doc.type === 'attachment';
+    const card = document.createElement('div');
+    card.className = 'doc-card';
+    card.innerHTML = `
+      <div class="doc-icon" style="background:${t.light}; color:${t.color}; font-size:17px;">${t.emoji}</div>
+      <div class="doc-card-body">
+        <div class="doc-card-title">${doc.title}</div>
+        ${doc.content ? `<div class="doc-card-content">${doc.content}</div>` : ''}
+        ${isRef && doc.url ? `<div class="doc-card-content"><a href="${doc.url}" target="_blank" style="color:var(--accent); text-decoration:none; word-break:break-all;">${doc.url}</a></div>` : ''}
+        <div class="doc-card-meta">
+          <span class="doc-type-badge" style="background:${t.light}; color:${t.color}; border-color:${t.color}33;">${t.label}</span>
+        </div>
+      </div>
+      <div class="doc-card-actions">
+        <button class="doc-action-btn" onclick="openDocEdit(${doc.id})" title="Edit">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="doc-action-btn danger" onclick="deleteDoc(${doc.id})" title="Delete">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+// extend openModal to handle 'doc'
+const _origOpenModal = openModal;
+openModal = function(type) {
+  if (type === 'doc') {
+    document.getElementById('doc-type').value   = 'note';
+    document.getElementById('doc-title').value  = '';
+    document.getElementById('doc-content').value = '';
+    document.getElementById('doc-url').value    = '';
+    onDocTypeChange();
+    document.getElementById('doc-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('doc-title').focus(), 50);
+    return;
+  }
+  _origOpenModal(type);
+};
+
+function openDocEdit(id) {
+  const doc = docs.find(d => d.id === id);
+  if (!doc) return;
+  editingDocId = id;
+  const isRef = doc.type === 'reference' || doc.type === 'attachment';
+  document.getElementById('doc-edit-title').value   = doc.title;
+  document.getElementById('doc-edit-content').value = doc.content || '';
+  document.getElementById('doc-edit-url').value     = doc.url || '';
+  document.getElementById('doc-edit-content-field').style.display = isRef ? 'none' : 'flex';
+  document.getElementById('doc-edit-url-field').style.display     = isRef ? 'flex' : 'none';
+  document.getElementById('doc-edit-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('doc-edit-title').focus(), 50);
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    ['item-modal','risk-modal','stakeholder-modal','doc-modal','doc-edit-modal','back-modal']
+      .forEach(id => { document.getElementById(id).style.display = 'none'; });
+  }
+  const activeModal = ['item-modal','risk-modal','stakeholder-modal','doc-modal','doc-edit-modal']
+    .find(id => document.getElementById(id).style.display === 'flex');
+  if (activeModal && e.key === 'Enter' && !e.shiftKey && document.activeElement.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    if (activeModal === 'item-modal')       saveItemModal();
+    else if (activeModal === 'risk-modal')  saveRiskModal();
+    else if (activeModal === 'stakeholder-modal') saveStakeholderModal();
+    else if (activeModal === 'doc-modal')   saveDocModal();
+    else if (activeModal === 'doc-edit-modal') saveDocEdit();
+  }
+});
+
+// ── EXPOSE TO INLINE onclick HANDLERS (required for ES modules) ──
+Object.assign(window, {
+  activateField, deactivateField, saveField,
+  cycleStatus, openModal, closeModal,
+  saveItemModal, saveRiskModal, saveStakeholderModal,
+  deleteItem, deleteRisk, deleteStakeholder,
+  renderCosts, renderBenefits, renderRisks, renderStakeholders,
+  toggleApproverPopout, closeApproverPopout, saveApprover, clearApprover,
+  confirmBackToGraph, discardAndLeave, saveAndLeave,
+  onDocTypeChange, saveDocModal, openDocEdit, saveDocEdit, deleteDoc,
+});
+
+// ── BOOT ──
+loadAll();
+
+</script>
+</body>
+</html>

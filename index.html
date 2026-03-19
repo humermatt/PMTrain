@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM.Train</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #ededef;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.11);
+    --text: #1a1a1f;
+    --text2: #6b6a68;
+    --text3: #a0a09e;
+    --accent: #5a4fcf;
+
+    --c1: #7c6fcd; --c1l: rgba(124,111,205,0.15); --c1t: #a99de0;
+    --c2: #5a9e7a; --c2l: rgba(90,158,122,0.15); --c2t: #84c4a0;
+    --c3: #4a8bc4; --c3l: rgba(74,139,196,0.15); --c3t: #78b0d8;
+    --c4: #c4854a; --c4l: rgba(196,133,74,0.15); --c4t: #d8a878;
+
+    --node-w: 180px;
+    --node-h: 100px;
+    --radius: 10px;
+  }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BARS ── */
+  .topbar {
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .subbar {
+    min-height: 40px;
+    max-height: 80px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 99;
+  }
+  .topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text3);
+    letter-spacing: -0.2px;
+    line-height: 1;
+  }
+  .topbar-goal {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--accent);
+    letter-spacing: 0.01em;
+    opacity: 0.8;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+  }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border2); }
+  .topbar-project-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .topbar-hint { font-size: 12px; color: var(--text3); }
+  .topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .subbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn-empty {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.18);
+    background: rgba(0,0,0,0.06);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 80px;
+  }
+  .btn-empty:hover { background: rgba(0,0,0,0.11); color: var(--text2); }
+  .btn {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg3); color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .btn-primary {
+    background: #1a1a1f;
+    color: #ffffff;
+    border-color: transparent;
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #2e2e38; color: #ffffff; }
+
+  /* ── FLOATING DIAMOND BUTTONS ── */
+  .float-btns {
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    z-index: 60;
+  }
+  .diamond-wrap {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .diamond-btn {
+    width: 48px;
+    height: 48px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .diamond-btn:hover { transform: scale(1.15) rotate(45deg); }
+  .diamond-btn:active { transform: scale(0.95) rotate(45deg); }
+  .diamond-shape {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    transform: rotate(45deg);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12);
+    transition: box-shadow 0.18s;
+  }
+  .diamond-btn:hover .diamond-shape {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.14);
+  }
+  .diamond-icon {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.92);
+    pointer-events: none;
+  }
+  .diamond-tooltip {
+    position: absolute;
+    left: 58px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .diamond-wrap:hover .diamond-tooltip { opacity: 1; }
+
+  .canvas-wrap {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    overflow: hidden;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.1) 1px, transparent 0);
+    background-size: 28px 28px;
+  }
+  #canvas {
+    position: absolute;
+    width: 4000px;
+    height: 3000px;
+    transform-origin: 0 0;
+  }
+
+  /* ── SVG ARROWS ── */
+  #arrows-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  /* ── NODES ── */
+  .node {
+    position: absolute;
+    width: var(--node-w);
+    background: var(--bg2);
+    border-radius: var(--radius);
+    border: 1px solid rgba(0,0,0,0.08);
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    transition: box-shadow 0.18s, transform 0.18s, border-color 0.15s;
+    z-index: 10;
+  }
+  .node:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.11), 0 2px 6px rgba(0,0,0,0.07);
+    transform: translateY(-2px);
+    border-color: rgba(0,0,0,0.13);
+    z-index: 20;
+  }
+  .node.dragging {
+    cursor: grabbing;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-4px) scale(1.01);
+    z-index: 100;
+    transition: none;
+  }
+  .node-top {
+    height: 6px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .node-body { padding: 12px 14px 10px; }
+  .node-phase-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .node-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+  .node-desc {
+    font-size: 10px;
+    color: var(--text3);
+    line-height: 1.5;
+  }
+  .node-progress {
+    margin: 8px 14px 0;
+  }
+  .node-progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .node-progress-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .node-progress-pct {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+  .node-progress-track {
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .node-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.25s ease;
+  }
+  .node-progress-waiting {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 2px 0;
+  }
+  .node-progress-done {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #3a9e6a;
+    padding: 2px 0;
+  }
+  .node-progress-controls {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .node-progress-btn {
+    flex: 1;
+    font-size: 10px;
+    font-family: 'Geist', sans-serif;
+    padding: 3px 0;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.12s;
+    line-height: 1;
+  }
+  .node-progress-btn:hover { background: var(--bg3); color: var(--text); }
+  .node-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 14px 9px;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+  .node-index { font-size: 10px; color: var(--text3); }
+  .node-delete {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .node-edit {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .node-edit:hover { background: var(--bg3); color: var(--text); }
+  .node-delete:hover { background: rgba(200,50,50,0.08); color: #c03030; }
+
+  /* ── BUSINESS CASE LINK BUTTON ── */
+  .node-bc-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 14px 10px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(90,79,207,0.3);
+    background: rgba(90,79,207,0.07);
+    color: var(--accent);
+    font-family: 'Geist', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    width: calc(100% - 28px);
+    justify-content: center;
+  }
+  .node-bc-link:hover {
+    background: rgba(90,79,207,0.14);
+    border-color: rgba(90,79,207,0.5);
+    color: #4038b0;
+  }
+
+  /* ── EDIT MODAL ── */
+  .edit-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .edit-modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 24px;
+    width: 320px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .edit-modal-header {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .edit-field label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .edit-field input, .edit-field textarea {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    padding: 8px 10px;
+    outline: none;
+    resize: none;
+    transition: border-color 0.15s;
+  }
+  .edit-field input:focus, .edit-field textarea:focus {
+    border-color: rgba(0,0,0,0.25);
+  }
+  .edit-field input[type="date"] {
+    font-family: 'Geist', sans-serif;
+    color: var(--text2);
+    cursor: pointer;
+  }
+  .color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    transition: transform 0.12s, border-color 0.12s;
+    flex-shrink: 0;
+  }
+  .color-swatch:hover { transform: scale(1.15); }
+  .color-swatch.selected { border-color: var(--text); transform: scale(1.15); }
+  .edit-modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+  .edit-cancel {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .edit-cancel:hover { background: var(--bg3); }
+  .edit-save {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: none;
+    background: #1a1a1f;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .edit-save:hover { background: #2e2e38; }
+  /* port dots */
+  .port {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1.5px solid rgba(0,0,0,0.2);
+    cursor: crosshair;
+    transition: all 0.12s;
+    z-index: 5;
+  }
+  .port:hover { transform: scale(1.4); border-color: var(--accent); background: var(--accent); }
+  .port-right { right: -5px; top: 50%; transform: translateY(-50%); }
+  .port-right:hover { transform: translateY(-50%) scale(1.4); }
+  .port-left { left: -5px; top: 50%; transform: translateY(-50%); }
+  .port-left:hover { transform: translateY(-50%) scale(1.4); }
+
+  /* ── CONTEXT / TOOLTIP ── */
+  .ctx-menu {
+    position: absolute;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 4px;
+    z-index: 200;
+    display: none;
+    min-width: 140px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  .ctx-item {
+    font-size: 12px;
+    color: var(--text2);
+    padding: 7px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ctx-item:hover { background: var(--bg3); color: var(--text); }
+  .ctx-item.danger:hover { background: rgba(200,50,50,0.07); color: #c03030; }
+
+  /* ── ZOOM CONTROLS ── */
+  .zoom-controls {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    display: flex;
+    gap: 4px;
+    z-index: 60;
+  }
+  .zoom-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--text2);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .zoom-btn:hover { background: var(--bg3); color: var(--text); }
+  .zoom-label {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--text3);
+    font-size: 11px;
+    display: flex; align-items: center;
+    min-width: 48px; justify-content: center;
+  }
+
+  /* ── MINI STATUS ── */
+  .status-bar {
+    position: absolute;
+    bottom: 16px; left: 88px;
+    font-size: 11px;
+    color: var(--text3);
+    z-index: 60;
+  }
+
+  /* ── PHASE POPOUT MENU ── */
+  .phase-popout {
+    position: fixed;
+    z-index: 300;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 200px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08);
+    display: none;
+    animation: popout-in 0.15s cubic-bezier(0.34,1.4,0.64,1);
+  }
+  @keyframes popout-in {
+    from { opacity: 0; transform: scale(0.92) translateX(-6px); }
+    to   { opacity: 1; transform: scale(1) translateX(0); }
+  }
+  .phase-popout.visible { display: block; }
+  .popout-header {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #a0a09e;
+    padding: 4px 8px 6px;
+  }
+  .popout-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #1a1a1f;
+    font-family: 'Geist', sans-serif;
+    transition: background 0.1s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .popout-item:hover { background: #f5f5f7; }
+  .popout-item-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .popout-item-custom {
+    color: #6b6a68;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    margin-top: 3px;
+    padding-top: 10px;
+  }
+  .popout-item-custom:hover { background: #f5f5f7; color: #1a1a1f; }
+
+  /* ── GATE NODE ── */
+  .gate {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #888780;
+    border: 3px solid #6e6d6b;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.14), 0 1px 2px rgba(0,0,0,0.08);
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: box-shadow 0.18s, transform 0.18s, background 0.25s, border-color 0.25s;
+  }
+  .gate:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    z-index: 20;
+  }
+  .gate.dragging {
+    cursor: grabbing;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.22);
+    transform: translateY(-4px) scale(1.04);
+    z-index: 100;
+    transition: none;
+  }
+  .gate.gate-approved {
+    background: #3a9e6a;
+    border-color: #2c7d52;
+  }
+  .gate-icon {
+    pointer-events: none;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gate-label {
+    position: absolute;
+    top: -34px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Geist', sans-serif;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6e6d6b;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .gate-actions {
+    position: absolute;
+    left: 72px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 30;
+    pointer-events: all;
+  }
+  .gate-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .gate-action-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(0,0,0,0.22); }
+  .gate-action-approve { background: #3a9e6a; }
+  .gate-action-delete  { background: #c03030; }
+  .gate-action-revert  { background: #888780; }
+  .gate-action-edit    { background: #5a4fcf; }
+  .gate .port-right { right: -5px; top: 50%; transform: translateY(-50%); }
+  .gate .port-right:hover { transform: translateY(-50%) scale(1.4); }
+  .gate .port-left  { left: -5px;  top: 50%; transform: translateY(-50%); }
+  .gate .port-left:hover  { transform: translateY(-50%) scale(1.4); }
+
+  /* ── INITIATE PROJECT NODE ── */
+  .project-start {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    background: #3a3a3e;
+    border: 3px solid #222226;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.22), 0 1px 2px rgba(0,0,0,0.12);
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: box-shadow 0.18s, transform 0.18s, background 0.25s, border-color 0.25s;
+  }
+  .project-start:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.26), 0 2px 6px rgba(0,0,0,0.14);
+    transform: translateY(-2px);
+    z-index: 20;
+  }
+  .project-start.dragging {
+    cursor: grabbing;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+    transform: translateY(-4px) scale(1.04);
+    z-index: 100;
+    transition: none;
+  }
+  .project-start.start-initiated {
+    background: #3a9e6a;
+    border-color: #2c7d52;
+  }
+  .project-start-icon {
+    pointer-events: none;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .project-start-label {
+    position: absolute;
+    top: -34px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Geist', sans-serif;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #3a3a3e;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .project-start-actions {
+    position: absolute;
+    left: 80px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 30;
+    pointer-events: all;
+  }
+  .project-start .port-right { right: -5px; top: 50%; transform: translateY(-50%); }
+  .project-start .port-right:hover { transform: translateY(-50%) scale(1.4); }
+
+  /* ── PROJECT END NODE ── */
+  .project-end {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    background: #3a3a3e;
+    border: 3px solid #222226;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.22), 0 1px 2px rgba(0,0,0,0.12);
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: box-shadow 0.18s, transform 0.18s, background 0.25s, border-color 0.25s;
+  }
+  .project-end:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.26), 0 2px 6px rgba(0,0,0,0.14);
+    transform: translateY(-2px);
+    z-index: 20;
+  }
+  .project-end.dragging {
+    cursor: grabbing;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+    transform: translateY(-4px) scale(1.04);
+    z-index: 100;
+    transition: none;
+  }
+  .project-end.end-completed {
+    background: #3a9e6a;
+    border-color: #2c7d52;
+  }
+  .project-end-icon {
+    pointer-events: none;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .project-end-label {
+    position: absolute;
+    top: -34px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Geist', sans-serif;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #3a3a3e;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .project-end-actions {
+    position: absolute;
+    left: 80px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 30;
+    pointer-events: all;
+  }
+  .project-end .port-left  { left: -5px;  top: 50%; transform: translateY(-50%); }
+  .project-end .port-left:hover  { transform: translateY(-50%) scale(1.4); }
+
+  #temp-line {
+    pointer-events: none;
+    stroke: #5a4fcf;
+    stroke-width: 1.5;
+    stroke-dasharray: 5 4;
+    fill: none;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-title">PM.Train</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-project-title" id="topbar-project-title">Project New Technology</span>
+  <div class="topbar-actions">
+    <button class="btn" onclick="autoLayout()">Auto layout</button>
+  </div>
+</div>
+
+<!-- SUB BAR -->
+<div class="subbar">
+  <div class="topbar-goal" id="topbar-goal">The goal of this project is to get projects back on the rails — delivering clarity, momentum, and confidence to every stakeholder by transforming scattered effort into a single, unified direction that the whole team can rally behind and drive forward together.</div>
+  <div class="subbar-actions">
+    <button class="btn-empty">Project Plan</button>
+    <button class="btn-empty">Charter</button>
+    <button class="btn-empty">Responsibilities</button>
+  </div>
+</div>
+
+<!-- CANVAS -->
+<div class="canvas-wrap" id="canvasWrap">
+
+  <!-- FLOATING DIAMOND BUTTONS -->
+  <div class="float-btns">
+    <div class="diamond-wrap">
+      <button class="diamond-btn" onclick="openPhaseMenu(0, event)" title="Add Project Initiation node">
+        <div class="diamond-shape" style="background:#7c6fcd"></div>
+        <div class="diamond-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+            <path d="M9 18h6"/><path d="M10 22h4"/>
+          </svg>
+        </div>
+      </button>
+      <div class="diamond-tooltip" style="background:#dddaf4; color:#534AB7;">Project Initiation</div>
+    </div>
+    <div class="diamond-wrap">
+      <button class="diamond-btn" onclick="openPhaseMenu(1, event)" title="Add Project Planning node">
+        <div class="diamond-shape" style="background:#c4854a"></div>
+        <div class="diamond-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+      </button>
+      <div class="diamond-tooltip" style="background:#f5dfc8; color:#8c5a25;">Project Planning</div>
+    </div>
+    <div class="diamond-wrap">
+      <button class="diamond-btn" onclick="openPhaseMenu(2, event)" title="Add Project Execution node">
+        <div class="diamond-shape" style="background:#4a8bc4"></div>
+        <div class="diamond-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+      </button>
+      <div class="diamond-tooltip" style="background:#cde0f3; color:#185FA5;">Project Execution</div>
+    </div>
+    <div class="diamond-wrap">
+      <button class="diamond-btn" onclick="openPhaseMenu(3, event)" title="Add Project Closing node">
+        <div class="diamond-shape" style="background:#5a9e7a"></div>
+        <div class="diamond-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+      </button>
+      <div class="diamond-tooltip" style="background:#c8e8d8; color:#0F6E56;">Project Closing</div>
+    </div>
+    <div class="diamond-wrap">
+      <button class="diamond-btn" onclick="openPhaseMenu(4, event)" title="Add Other node">
+        <div class="diamond-shape" style="background:#888780"></div>
+        <div class="diamond-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+      </button>
+      <div class="diamond-tooltip" style="background:#dddcda; color:#5F5E5A;">Other</div>
+    </div>
+    <div style="width:28px; height:1px; background:rgba(0,0,0,0.1); margin:2px auto;"></div>
+    <div class="diamond-wrap">
+      <button class="diamond-btn" onclick="openGateMenu(event)" title="Add Gate">
+        <div class="diamond-shape" style="background:#555450"></div>
+        <div class="diamond-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <line x1="8" y1="8" x2="16" y2="16"/>
+            <line x1="16" y1="8" x2="8" y2="16"/>
+          </svg>
+        </div>
+      </button>
+      <div class="diamond-tooltip" style="background:#d8d7d5; color:#444441;">Gate</div>
+    </div>
+  </div>
+
+  <div id="canvas">
+    <svg id="arrows-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="rgba(0,0,0,0.75)"/>
+        </marker>
+      </defs>
+      <path id="temp-line" d=""/>
+    </svg>
+  </div>
+  <div class="zoom-controls">
+    <button class="zoom-btn" onclick="zoom(-0.1)">−</button>
+    <div class="zoom-label" id="zoom-label">100%</div>
+    <button class="zoom-btn" onclick="zoom(0.1)">+</button>
+  </div>
+  <div class="status-bar" id="status-bar">0 nodes</div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" onclick="ctxDuplicate()">⧉ Duplicate node</div>
+  <div class="ctx-item danger" onclick="ctxDelete()">✕ Delete node</div>
+</div>
+
+<!-- PHASE POPOUT MENU -->
+<div class="phase-popout" id="phasePopout"></div>
+
+<!-- START NODE EDIT MODAL -->
+<div class="edit-overlay" id="startEditOverlay" style="display:none;" onmousedown="closeStartEditModal(event)">
+  <div class="edit-modal" style="width:360px;" onmousedown="event.stopPropagation()">
+    <div class="edit-modal-header">Project Details</div>
+    <div class="edit-field">
+      <label>Project Title</label>
+      <input type="text" id="startEditProjectTitle" placeholder="e.g. Project New Technology" />
+    </div>
+    <div class="edit-field">
+      <label>Project Goal</label>
+      <textarea id="startEditProjectGoal" rows="3" placeholder="What is this project trying to achieve?"></textarea>
+    </div>
+    <div class="edit-field">
+      <label>Project Start Date</label>
+      <input type="date" id="startEditStartDate" />
+    </div>
+    <div class="edit-field">
+      <label>Project Expected End Date</label>
+      <input type="date" id="startEditEndDate" />
+    </div>
+    <div class="edit-modal-actions">
+      <button class="edit-cancel" onclick="closeStartEditModal()">Cancel</button>
+      <button class="edit-save" onclick="saveStartEditModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- OTHER NODE MODAL -->
+<div class="edit-overlay" id="otherNodeOverlay" style="display:none;" onmousedown="closeOtherNodeModal(event)">
+  <div class="edit-modal" onmousedown="event.stopPropagation()">
+    <div class="edit-modal-header">Add Other Node</div>
+    <div class="edit-field">
+      <label>Title</label>
+      <input type="text" id="otherNodeTitle" placeholder="Node title" />
+    </div>
+    <div class="edit-field">
+      <label>Description</label>
+      <textarea id="otherNodeDesc" rows="3" placeholder="Short description (optional)"></textarea>
+    </div>
+    <div class="edit-field">
+      <label>Colour</label>
+      <input type="hidden" id="otherNodeColor" value="#888780" />
+      <div id="otherColorSwatches" style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 0;"></div>
+      <div id="otherColorLabel" style="font-size:11px; color:var(--text3); margin-top:4px;">Grey</div>
+    </div>
+    <div class="edit-modal-actions">
+      <button class="edit-cancel" onclick="closeOtherNodeModal()">Cancel</button>
+      <button class="edit-save" onclick="saveOtherNodeModal()">Add Node</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM NODE MODAL -->
+<div class="edit-overlay" id="customNodeOverlay" style="display:none;" onmousedown="closeCustomNodeModal(event)">
+  <div class="edit-modal" onmousedown="event.stopPropagation()">
+    <div class="edit-modal-header">Custom Node</div>
+    <div class="edit-field">
+      <label>Title</label>
+      <input type="text" id="customNodeTitle" placeholder="Node title" />
+    </div>
+    <div class="edit-field">
+      <label>Description</label>
+      <textarea id="customNodeDesc" rows="3" placeholder="Short description (optional)"></textarea>
+    </div>
+    <div class="edit-modal-actions">
+      <button class="edit-cancel" onclick="closeCustomNodeModal()">Cancel</button>
+      <button class="edit-save" onclick="saveCustomNodeModal()">Add Node</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="edit-overlay" id="editOverlay" style="display:none;" onmousedown="closeEditModal(event)">
+  <div class="edit-modal" onmousedown="event.stopPropagation()">
+    <div class="edit-modal-header">Edit Node</div>
+    <div class="edit-field">
+      <label>Title</label>
+      <input type="text" id="editTitle" placeholder="Node title" />
+    </div>
+    <div class="edit-field">
+      <label>Description</label>
+      <textarea id="editDesc" rows="3" placeholder="Short description"></textarea>
+    </div>
+    <div class="edit-modal-actions">
+      <button class="edit-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="edit-save" onclick="saveEditModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── BUSINESS CASE ID (shared with business-case.html) ──
+const BC_ID = '00000000-0000-0000-0000-000000000001';
+
+function openBusinessCase() {
+  window.location.href = 'business-case.html?id=' + BC_ID;
+}
+
+// ── PHASE POPOUT MENU ──
+const phasePopout = document.getElementById('phasePopout');
+let popoutOpen = false;
+
+function openPhaseMenu(phaseIdx, e) {
+  e.stopPropagation();
+  if (phaseIdx === 4) {
+    document.getElementById('otherNodeTitle').value = '';
+    document.getElementById('otherNodeDesc').value  = '';
+    initColorSwatches('#e05252');
+    document.getElementById('otherNodeOverlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('otherNodeTitle').focus(), 50);
+    return;
+  }
+  const ph = PHASES[phaseIdx];
+  let html = `<div class="popout-header">${ph.name}</div>`;
+  ph.nodes.forEach(nodeName => {
+    html += `
+      <button class="popout-item" onclick="pickNode(${phaseIdx}, '${nodeName.replace(/'/g,"\\'")}')">
+        <span class="popout-item-dot" style="background:${ph.color}"></span>
+        ${nodeName}
+      </button>`;
+  });
+  html += `
+    <button class="popout-item popout-item-custom" onclick="pickCustomNode(${phaseIdx})">
+      <span class="popout-item-dot" style="background:#a0a09e"></span>
+      Custom…
+    </button>`;
+  phasePopout.innerHTML = html;
+  const rect = e.currentTarget.getBoundingClientRect();
+  phasePopout.style.left = (rect.right + 12) + 'px';
+  phasePopout.style.top  = (rect.top + rect.height / 2 - 40) + 'px';
+  phasePopout.classList.add('visible');
+  popoutOpen = true;
+}
+
+function pickNode(phaseIdx, nodeName) {
+  addNode(phaseIdx, undefined, undefined, false, nodeName);
+  closePhaseMenu();
+}
+
+let customNodePhaseIdx = null;
+
+function pickCustomNode(phaseIdx) {
+  customNodePhaseIdx = phaseIdx;
+  closePhaseMenu();
+  document.getElementById('customNodeTitle').value = '';
+  document.getElementById('customNodeDesc').value = '';
+  document.getElementById('customNodeOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('customNodeTitle').focus(), 50);
+}
+
+const OTHER_COLORS = [
+  { value: '#e05252', label: 'Red' },
+  { value: '#e07c2e', label: 'Orange' },
+  { value: '#1a2a4a', label: 'Navy' },
+  { value: '#3a9ebf', label: 'Teal' },
+  { value: '#c45a8a', label: 'Pink' },
+  { value: '#e84393', label: 'Magenta' },
+  { value: '#2db3a0', label: 'Cyan' },
+  { value: '#8bc44a', label: 'Lime' },
+  { value: '#c43a3a', label: 'Crimson' },
+  { value: '#4ac4b4', label: 'Aqua' },
+  { value: '#c4b44a', label: 'Gold' },
+  { value: '#7a4acf', label: 'Violet' },
+];
+
+function initColorSwatches(selected) {
+  const container = document.getElementById('otherColorSwatches');
+  const labelEl   = document.getElementById('otherColorLabel');
+  container.innerHTML = '';
+  OTHER_COLORS.forEach(c => {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch' + (c.value === selected ? ' selected' : '');
+    swatch.style.background = c.value;
+    swatch.title = c.label;
+    swatch.addEventListener('click', () => {
+      document.getElementById('otherNodeColor').value = c.value;
+      container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      labelEl.textContent = c.label;
+    });
+    container.appendChild(swatch);
+  });
+  document.getElementById('otherNodeColor').value = selected;
+  const match = OTHER_COLORS.find(c => c.value === selected);
+  labelEl.textContent = match ? match.label : '';
+}
+
+function saveOtherNodeModal() {
+  const title = document.getElementById('otherNodeTitle').value.trim();
+  const desc  = document.getElementById('otherNodeDesc').value.trim();
+  const color = document.getElementById('otherNodeColor').value;
+  if (!title) { document.getElementById('otherNodeTitle').focus(); return; }
+  const ph = PHASES[4];
+  const prevColor = ph.color;
+  ph.color = color;
+  ph.descs[title] = desc;
+  addNode(4, undefined, undefined, false, title);
+  ph.color = prevColor;
+  closeOtherNodeModal();
+}
+
+function closeOtherNodeModal(e) {
+  if (e && e.target !== document.getElementById('otherNodeOverlay')) return;
+  document.getElementById('otherNodeOverlay').style.display = 'none';
+}
+
+function saveCustomNodeModal() {
+  const title = document.getElementById('customNodeTitle').value.trim();
+  const desc  = document.getElementById('customNodeDesc').value.trim();
+  if (!title) { document.getElementById('customNodeTitle').focus(); return; }
+  const ph = PHASES[customNodePhaseIdx];
+  ph.descs[title] = desc;
+  addNode(customNodePhaseIdx, undefined, undefined, false, title);
+  closeCustomNodeModal();
+}
+
+function closeCustomNodeModal(e) {
+  if (e && e.target !== document.getElementById('customNodeOverlay')) return;
+  document.getElementById('customNodeOverlay').style.display = 'none';
+  customNodePhaseIdx = null;
+}
+
+function closePhaseMenu() {
+  phasePopout.classList.remove('visible');
+  popoutOpen = false;
+}
+
+// ── STATE ──
+const PHASES = [
+  { name: 'Project Initiation', color: '#7c6fcd', light: 'rgba(124,111,205,0.15)', label: 'Phase 01',
+    nodes: ['Project Charter','Project Goal','Business Case','Stakeholder Register','Project Initiation Document (PID)','Scope Statement'],
+    descs: { 'Project Charter': 'Formal document authorising the project', 'Project Goal': 'Define objectives & success criteria', 'Business Case': 'Justification for the project including costs and benefits', 'Stakeholder Register': 'Identify and document all project stakeholders', 'Project Initiation Document (PID)': 'Comprehensive document defining project scope, approach and responsibilities', 'Scope Statement': 'Defines the boundaries and deliverables of the project' } },
+  { name: 'Project Planning',   color: '#c4854a', light: 'rgba(196,133,74,0.15)',   label: 'Phase 02',
+    nodes: ['Scope Document','Project Management Plan','Resourcing Document','Project Scope Management','Work Breakdown Structure (WBS)','Project Schedule Development','Resource Planning','Budget Planning','Risk Management Plan','Communication Plan','Quality & Procurement Planning','Approval and Baselining'],
+    descs: { 'Scope Document': 'Define deliverables & boundaries', 'Project Management Plan': 'Integrated plan covering all knowledge areas', 'Resourcing Document': 'Team roles, skills & availability', 'Project Scope Management': '', 'Work Breakdown Structure (WBS)': '', 'Project Schedule Development': '', 'Resource Planning': '', 'Budget Planning': '', 'Risk Management Plan': '', 'Communication Plan': '', 'Quality & Procurement Planning': '', 'Approval and Baselining': '' } },
+  { name: 'Project Execution',  color: '#4a8bc4', light: 'rgba(74,139,196,0.15)',   label: 'Phase 03',
+    nodes: ['Sprint Initiation','Sprint Completion','Sprint Planning','Sprint Review','Sprint Retrospective'],
+    descs: { 'Sprint Initiation': 'Sprint planning & backlog grooming', 'Sprint Completion': 'Review, demo & retrospective', 'Sprint Planning': '', 'Sprint Review': '', 'Sprint Retrospective': '' } },
+  { name: 'Project Closing',    color: '#5a9e7a', light: 'rgba(90,158,122,0.15)',   label: 'Phase 04',
+    nodes: ['Success Criteria','Closing Actions','Acceptance Sign Off'],
+    descs: { 'Success Criteria': 'Validate outcomes against goals', 'Closing Actions': 'Lessons learned & resource release', 'Acceptance Sign Off': 'Formal client / sponsor sign-off' } },
+  { name: 'Other',              color: '#888780', light: 'rgba(136,135,128,0.15)',   label: 'Other',
+    nodes: ['Other'],
+    descs: { 'Other': 'Custom node' } },
+];
+
+let nodes = [];
+let connections = [];
+let nodeCounter = 0;
+let phaseCount = [0,0,0,0,0];
+
+let scale = 1;
+let panX = 0, panY = 0;
+let isPanning = false;
+let panStart = { x:0, y:0 };
+
+let dragging = null;
+let draggingGate = null;
+let draggingEnd = null;
+let draggingStart = null;
+let dragOffX = 0, dragOffY = 0;
+
+let connecting = null;
+let ctxTarget = null;
+
+const canvas = document.getElementById('canvas');
+const canvasWrap = document.getElementById('canvasWrap');
+const svg = document.getElementById('arrows-svg');
+const tempLine = document.getElementById('temp-line');
+const ctxMenu = document.getElementById('ctxMenu');
+
+let gates = [];
+let gateCounter = 0;
+
+function openGateMenu(e) {
+  e.stopPropagation();
+  const presets = PHASES.slice(0, 4).map(ph => ph.name + ' Exit Gate');
+  let html = `<div class="popout-header">Add Gate</div>`;
+  presets.forEach(label => {
+    html += `<button class="popout-item" onclick="addGate('${label.replace(/'/g,"\\'")}'); closePhaseMenu();">
+        <span class="popout-item-dot" style="background:#555450"></span>${label}</button>`;
+  });
+  html += `<button class="popout-item popout-item-custom" onclick="addCustomGate(); closePhaseMenu();">
+      <span class="popout-item-dot" style="background:#a0a09e"></span>Custom…</button>`;
+  phasePopout.innerHTML = html;
+  const rect = e.currentTarget.getBoundingClientRect();
+  phasePopout.style.left = (rect.right + 12) + 'px';
+  phasePopout.style.top  = (rect.top + rect.height / 2 - 40) + 'px';
+  phasePopout.classList.add('visible');
+  popoutOpen = true;
+}
+
+function addCustomGate() {
+  const name = prompt('Enter a name for this gate:');
+  if (name && name.trim()) addGate(name.trim());
+}
+
+function addGate(label) {
+  label = label || 'Exit Gate';
+  const id = ++gateCounter;
+  const rightmost = nodes.reduce((max, n) => n.x > max ? n.x : max, 80);
+  const gateRightmost = gates.reduce((max, g) => g.x > max ? g.x : max, rightmost);
+  const x = gateRightmost + 240;
+  const y = 160 + (145 - 64) / 2;
+  const gate = { id, x, y, approved: false, label };
+  gates.push(gate);
+  const labelHTML = label.endsWith('Exit Gate') && label !== 'Exit Gate'
+    ? label.replace(' Exit Gate', '') + '<br>Exit Gate' : label;
+  const el = document.createElement('div');
+  el.className = 'gate';
+  el.id = 'gate-' + id;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.innerHTML = `
+    <div class="gate-label">${labelHTML}</div>
+    <div class="gate-icon" id="gate-icon-${id}">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>
+      </svg>
+    </div>
+    <div class="port port-right" data-gate-id="${id}" data-side="right" title="Drag to connect"></div>
+    <div class="port port-left"  data-gate-id="${id}" data-side="left"  title="Connect here"></div>
+  `;
+  canvas.appendChild(el);
+  setupGateEvents(el, id);
+  updateStatus();
+}
+
+let activeGateId = null;
+
+function showGateActions(id) {
+  if (activeGateId !== null && activeGateId !== id) hideGateActions(activeGateId);
+  activeGateId = id;
+  const el = document.getElementById('gate-' + id);
+  if (el.querySelector('.gate-actions')) return;
+  const gate = gates.find(g => g.id === id);
+  const isApproved = gate && gate.approved;
+  const actions = document.createElement('div');
+  actions.className = 'gate-actions';
+  actions.innerHTML = isApproved
+    ? `<button class="gate-action-btn gate-action-revert" title="Revert to X" onmousedown="event.stopPropagation()" onclick="approveGate(${id}, false); event.stopPropagation();">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>
+      </button>
+      <button class="gate-action-btn gate-action-delete" title="Delete gate" onmousedown="event.stopPropagation()" onclick="deleteGate(${id}); event.stopPropagation();">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>`
+    : `<button class="gate-action-btn gate-action-approve" title="Approve gate" onmousedown="event.stopPropagation()" onclick="approveGate(${id}, true); event.stopPropagation();">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <button class="gate-action-btn gate-action-delete" title="Delete gate" onmousedown="event.stopPropagation()" onclick="deleteGate(${id}); event.stopPropagation();">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>`;
+  el.appendChild(actions);
+}
+
+function hideGateActions(id) {
+  const el = document.getElementById('gate-' + id);
+  if (!el) return;
+  const actions = el.querySelector('.gate-actions');
+  if (actions) actions.remove();
+  if (activeGateId === id) activeGateId = null;
+}
+
+function approveGate(id, approved) {
+  const gate = gates.find(g => g.id === id);
+  if (!gate) return;
+  gate.approved = approved;
+  const el = document.getElementById('gate-' + id);
+  const iconEl = document.getElementById('gate-icon-' + id);
+  if (approved) {
+    el.classList.add('gate-approved');
+    iconEl.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  } else {
+    el.classList.remove('gate-approved');
+    iconEl.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>`;
+  }
+  hideGateActions(id);
+}
+
+function deleteGate(id) {
+  hideGateActions(id);
+  gates = gates.filter(g => g.id !== id);
+  connections = connections.filter(c => c.from !== 'g'+id && c.to !== 'g'+id);
+  const el = document.getElementById('gate-' + id);
+  if (el) el.remove();
+  renderArrows();
+  updateStatus();
+}
+
+function setupGateEvents(el, id) {
+  let mouseDownX = 0, mouseDownY = 0;
+  const DRAG_THRESHOLD = 4;
+  el.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('port') || e.button !== 0) return;
+    if (e.target.closest('.gate-actions')) return;
+    e.stopPropagation();
+    mouseDownX = e.clientX; mouseDownY = e.clientY;
+    const rect = el.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left; dragOffY = e.clientY - rect.top;
+    dragging = null; draggingGate = id;
+    el.classList.add('dragging');
+  });
+  el.addEventListener('click', e => {
+    if (e.target.classList.contains('port')) return;
+    if (e.target.closest('.gate-actions')) return;
+    const dist = Math.hypot(e.clientX - mouseDownX, e.clientY - mouseDownY);
+    if (dist < DRAG_THRESHOLD) {
+      if (activeGateId === id) hideGateActions(id);
+      else showGateActions(id);
+    }
+  });
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault(); e.stopPropagation();
+    ctxTarget = 'gate-' + id;
+    ctxMenu.style.display = 'block';
+    ctxMenu.style.left = e.clientX + 'px';
+    ctxMenu.style.top  = e.clientY + 'px';
+  });
+  el.querySelectorAll('.port').forEach(port => {
+    port.addEventListener('mousedown', e => {
+      e.stopPropagation(); e.preventDefault();
+      draggingGate = null;
+      connecting = { fromGateId: id };
+      tempLine.style.display = 'block';
+    });
+  });
+}
+
+// ── INIT ──
+function init() {
+  const startX = 80, rowY = 160, gapX = 240, gateSize = 64;
+  const startNodeX = startX - 240 + (240 - 72) / 2;
+  const startNodeY = rowY + (145 - 72) / 2;
+  const sid = addProjectStart(startNodeX, startNodeY);
+
+  const defaultNodes = [
+    { phaseIdx: 0, nodeName: 'Project Goal' },
+    { phaseIdx: 1, nodeName: 'Scope Document' },
+    { phaseIdx: 2, nodeName: 'Sprint Initiation' },
+    { phaseIdx: 3, nodeName: 'Success Criteria' },
+  ];
+
+  const items = [];
+  defaultNodes.forEach((n, i) => {
+    items.push({ type: 'node', phaseIdx: n.phaseIdx, nodeName: n.nodeName });
+    if (i < defaultNodes.length - 1) items.push({ type: 'gate', exitPhaseIdx: n.phaseIdx });
+  });
+
+  let curX = startX;
+  items.forEach(item => {
+    item.x = curX; item.y = rowY;
+    curX += item.type === 'gate' ? gateSize + (gapX - gateSize) : gapX;
+  });
+
+  const placed = [];
+  items.forEach(item => {
+    if (item.type === 'node') {
+      const id = addNode(item.phaseIdx, item.x, item.y, true, item.nodeName);
+      placed.push({ type: 'node', id, key: id });
+    } else {
+      const gid = ++gateCounter;
+      const gateY = rowY + (145 - gateSize) / 2;
+      const exitPhaseName = PHASES[item.exitPhaseIdx].name;
+      const labelText = exitPhaseName + ' Exit Gate';
+      const labelHTML = `${exitPhaseName}<br>Exit Gate`;
+      const gate = { id: gid, x: item.x, y: gateY, approved: false, label: labelText };
+      gates.push(gate);
+      const el = document.createElement('div');
+      el.className = 'gate'; el.id = 'gate-' + gid;
+      el.style.left = item.x + 'px'; el.style.top = gateY + 'px';
+      el.innerHTML = `
+        <div class="gate-label">${labelHTML}</div>
+        <div class="gate-icon" id="gate-icon-${gid}">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>
+          </svg>
+        </div>
+        <div class="port port-right" data-gate-id="${gid}" data-side="right"></div>
+        <div class="port port-left"  data-gate-id="${gid}" data-side="left"></div>
+      `;
+      canvas.appendChild(el);
+      setupGateEvents(el, gid);
+      placed.push({ type: 'gate', id: gid, key: 'g' + gid });
+    }
+  });
+
+  placed.unshift({ type: 'start', id: sid, key: 's' + sid });
+
+  const lastItem = items[items.length - 1];
+  const endX = lastItem.x + (lastItem.type === 'gate' ? 64 : 180) + (240 - 72) / 2 + 40;
+  const endY = rowY + (145 - 72) / 2;
+  const eid = ++projectEndCounter;
+  projectEnds.push({ id: eid, x: endX, y: endY, completed: false });
+  const endEl = document.createElement('div');
+  endEl.className = 'project-end'; endEl.id = 'end-' + eid;
+  endEl.style.left = endX + 'px'; endEl.style.top = endY + 'px';
+  endEl.innerHTML = `
+    <div class="project-end-label">Project End</div>
+    <div class="project-end-icon" id="end-icon-${eid}">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+    </div>
+    <div class="port port-left" data-end-id="${eid}" data-side="left"></div>
+  `;
+  canvas.appendChild(endEl);
+  setupProjectEndEvents(endEl, eid);
+  placed.push({ type: 'end', id: eid, key: 'e' + eid });
+
+  setTimeout(() => {
+    for (let i = 0; i < placed.length - 1; i++) addConnection(placed[i].key, placed[i + 1].key);
+    updateStatus();
+  }, 50);
+}
+
+// ── ADD NODE ──
+function addNode(phaseIdx, x, y, silent, forceName) {
+  const ph = PHASES[phaseIdx];
+  phaseCount[phaseIdx]++;
+  const count = phaseCount[phaseIdx];
+  const id = ++nodeCounter;
+  const nodeName = forceName || ph.nodes[(count - 1) % ph.nodes.length];
+  const desc = ph.descs[nodeName] || '';
+
+  if (x === undefined) {
+    const rightmost = nodes.reduce((max, n) => n.x > max ? n.x : max, 80);
+    x = rightmost + 240;
+    y = 160 + (Math.random() * 40 - 20);
+  }
+
+  const node = { id, phaseIdx, x, y, title: nodeName, desc, count, phaseCount: count, progress: 0 };
+  nodes.push(node);
+
+  const isBC = nodeName === 'Business Case';
+
+  const el = document.createElement('div');
+  el.className = 'node';
+  el.id = 'node-' + id;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+
+  // Business Case node gets a special accent border
+  if (isBC) el.style.borderColor = 'rgba(90,79,207,0.35)';
+
+  el.innerHTML = `
+    <div class="node-top" style="background:${ph.color}"></div>
+    <div class="node-body">
+      <div class="node-phase-label" style="color:${ph.color}">${ph.name}</div>
+      <div class="node-title">${nodeName}</div>
+      <div class="node-desc">${desc}</div>
+    </div>
+    <div class="node-progress" id="progress-${id}">
+      <div class="node-progress-waiting">Waiting</div>
+    </div>
+    ${isBC ? `
+    <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openBusinessCase()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Business Case
+    </button>` : ''}
+    <div class="node-footer">
+      <div style="display:flex;gap:4px;margin-left:auto">
+        <button class="node-edit" data-action="edit" data-id="${id}" title="Edit" onmousedown="event.stopPropagation()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="node-delete" data-action="delete" data-id="${id}" title="Delete" onmousedown="event.stopPropagation()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="port port-right" data-id="${id}" data-side="right" title="Drag to connect"></div>
+    <div class="port port-left"  data-id="${id}" data-side="left"  title="Connect here"></div>
+  `;
+
+  canvas.appendChild(el);
+  setupNodeEvents(el, id);
+  renderProgress(id);
+  updateStatus();
+  if (!silent) renderArrows();
+  return id;
+}
+
+// ── PROGRESS ──
+function renderProgress(id) {
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+  const ph = PHASES[node.phaseIdx];
+  const container = document.getElementById('progress-' + id);
+  if (!container) return;
+  const p = node.progress;
+  if (p === 0) {
+    container.innerHTML = `<div class="node-progress-waiting">Waiting</div>
+      <div class="node-progress-controls">
+        <button class="node-progress-btn" onclick="setProgress(${id}, 25)" onmousedown="event.stopPropagation()">Start</button>
+      </div>`;
+  } else if (p >= 100) {
+    container.innerHTML = `<div class="node-progress-done">✓ Done</div>
+      <div class="node-progress-controls">
+        <button class="node-progress-btn" onclick="setProgress(${id}, 0)" onmousedown="event.stopPropagation()">Reset</button>
+      </div>`;
+  } else {
+    container.innerHTML = `
+      <div class="node-progress-header">
+        <span class="node-progress-label">Progress</span>
+        <span class="node-progress-pct">${p}%</span>
+      </div>
+      <div class="node-progress-track">
+        <div class="node-progress-fill" style="width:${p}%; background:${ph.color}"></div>
+      </div>
+      <div class="node-progress-controls">
+        <button class="node-progress-btn" onclick="setProgress(${id}, ${Math.max(0, p - 25)})" onmousedown="event.stopPropagation()">−25%</button>
+        <button class="node-progress-btn" onclick="setProgress(${id}, ${Math.min(100, p + 25)})" onmousedown="event.stopPropagation()">+25%</button>
+      </div>`;
+  }
+}
+
+function setProgress(id, value) {
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+  node.progress = Math.max(0, Math.min(100, value));
+  renderProgress(id);
+}
+
+// ── NODE EVENTS ──
+function setupNodeEvents(el, id) {
+  el.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    if (e.target.classList.contains('port')) return;
+    if (e.target.closest('.node-delete') || e.target.closest('.node-edit') ||
+        e.target.closest('.node-progress-btn') || e.target.closest('.node-bc-link')) return;
+    e.stopPropagation();
+    dragging = id;
+    const rect = el.getBoundingClientRect();
+    dragOffX = (e.clientX - rect.left);
+    dragOffY = (e.clientY - rect.top);
+    el.classList.add('dragging');
+  });
+  el.querySelector('.node-delete').addEventListener('click', e => { e.stopPropagation(); deleteNode(id); });
+  el.querySelector('.node-edit').addEventListener('click', e => { e.stopPropagation(); openEditModal(id); });
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault(); e.stopPropagation();
+    ctxTarget = id;
+    ctxMenu.style.display = 'block';
+    ctxMenu.style.left = e.clientX + 'px';
+    ctxMenu.style.top  = e.clientY + 'px';
+  });
+  el.querySelectorAll('.port').forEach(port => {
+    port.addEventListener('mousedown', e => {
+      e.stopPropagation(); e.preventDefault();
+      connecting = { fromId: id };
+      tempLine.style.display = 'block';
+    });
+  });
+}
+
+// ── CANVAS EVENTS ──
+canvasWrap.addEventListener('mousedown', e => {
+  if (e.button !== 0 || dragging || connecting) return;
+  isPanning = true;
+  panStart = { x: e.clientX - panX, y: e.clientY - panY };
+  canvasWrap.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', e => {
+  if (dragging) {
+    const node = nodes.find(n => n.id === dragging);
+    const el = document.getElementById('node-' + dragging);
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const nx = (e.clientX - wrapRect.left - panX) / scale - dragOffX / scale;
+    const ny = (e.clientY - wrapRect.top  - panY) / scale - dragOffY / scale;
+    node.x = nx; node.y = ny;
+    el.style.left = nx + 'px'; el.style.top = ny + 'px';
+    renderArrows(); return;
+  }
+  if (draggingGate) {
+    const gate = gates.find(g => g.id === draggingGate);
+    const el = document.getElementById('gate-' + draggingGate);
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const nx = (e.clientX - wrapRect.left - panX) / scale - dragOffX / scale;
+    const ny = (e.clientY - wrapRect.top  - panY) / scale - dragOffY / scale;
+    gate.x = nx; gate.y = ny;
+    el.style.left = nx + 'px'; el.style.top = ny + 'px';
+    renderArrows(); return;
+  }
+  if (draggingEnd) {
+    const end = projectEnds.find(e => e.id === draggingEnd);
+    const el = document.getElementById('end-' + draggingEnd);
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const nx = (e.clientX - wrapRect.left - panX) / scale - dragOffX / scale;
+    const ny = (e.clientY - wrapRect.top  - panY) / scale - dragOffY / scale;
+    end.x = nx; end.y = ny;
+    el.style.left = nx + 'px'; el.style.top = ny + 'px';
+    renderArrows(); return;
+  }
+  if (draggingStart) {
+    const st = projectStarts.find(s => s.id === draggingStart);
+    const el = document.getElementById('start-' + draggingStart);
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const nx = (e.clientX - wrapRect.left - panX) / scale - dragOffX / scale;
+    const ny = (e.clientY - wrapRect.top  - panY) / scale - dragOffY / scale;
+    st.x = nx; st.y = ny;
+    el.style.left = nx + 'px'; el.style.top = ny + 'px';
+    renderArrows(); return;
+  }
+  if (isPanning) {
+    panX = e.clientX - panStart.x;
+    panY = e.clientY - panStart.y;
+    applyTransform(); return;
+  }
+  if (connecting) {
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const mx = (e.clientX - wrapRect.left - panX) / scale;
+    const my = (e.clientY - wrapRect.top  - panY) / scale;
+    let fx, fy;
+    if (connecting.fromGateId) {
+      const g = gates.find(g => g.id === connecting.fromGateId);
+      fx = g.x + 64; fy = g.y + 32;
+    } else if (connecting.fromEndId) {
+      const en = projectEnds.find(e => e.id === connecting.fromEndId);
+      fx = en.x + 72; fy = en.y + 36;
+    } else if (connecting.fromStartId) {
+      const st = projectStarts.find(s => s.id === connecting.fromStartId);
+      fx = st.x + 72; fy = st.y + 36;
+    } else {
+      const fromNode = nodes.find(n => n.id === connecting.fromId);
+      fx = fromNode.x + 180; fy = fromNode.y + 50;
+    }
+    const dx = mx - fx;
+    tempLine.setAttribute('d', `M${fx},${fy} C${fx+dx/2},${fy} ${mx-dx/2},${my} ${mx},${my}`);
+  }
+});
+
+window.addEventListener('mouseup', e => {
+  if (dragging) { const el = document.getElementById('node-' + dragging); if (el) el.classList.remove('dragging'); dragging = null; }
+  if (draggingGate !== null) { const el = document.getElementById('gate-' + draggingGate); if (el) el.classList.remove('dragging'); draggingGate = null; }
+  if (draggingEnd !== null) { const el = document.getElementById('end-' + draggingEnd); if (el) el.classList.remove('dragging'); draggingEnd = null; }
+  if (draggingStart !== null) { const el = document.getElementById('start-' + draggingStart); if (el) el.classList.remove('dragging'); draggingStart = null; }
+  if (isPanning) { isPanning = false; canvasWrap.style.cursor = ''; }
+  if (connecting) {
+    const target = e.target;
+    if (target.classList.contains('port')) {
+      const toId = parseInt(target.dataset.id);
+      const toGateId = parseInt(target.dataset.gateId);
+      const toEndId = parseInt(target.dataset.endId);
+      const toStartId = parseInt(target.dataset.startId);
+      const { fromId, fromGateId, fromEndId, fromStartId } = connecting;
+      const fromKey = fromGateId ? 'g'+fromGateId : fromEndId ? 'e'+fromEndId : fromStartId ? 's'+fromStartId : fromId;
+      if (!isNaN(toEndId)) { if (fromKey !== 'e'+toEndId) addConnection(fromKey, 'e'+toEndId); }
+      else if (!isNaN(toStartId)) { if (fromKey !== 's'+toStartId) addConnection(fromKey, 's'+toStartId); }
+      else if (!isNaN(toGateId) && toGateId !== fromGateId) { addConnection(fromKey, 'g'+toGateId); }
+      else if (!isNaN(toId)) { if (fromKey !== toId) addConnection(fromKey, toId); }
+    }
+    connecting = null;
+    tempLine.style.display = 'none';
+    tempLine.setAttribute('d', '');
+  }
+});
+
+canvasWrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.08 : 0.08;
+  const wrapRect = canvasWrap.getBoundingClientRect();
+  const mx = e.clientX - wrapRect.left, my = e.clientY - wrapRect.top;
+  const prevScale = scale;
+  scale = Math.max(0.25, Math.min(2.5, scale + delta));
+  panX = mx - (mx - panX) * (scale / prevScale);
+  panY = my - (my - panY) * (scale / prevScale);
+  applyTransform();
+}, { passive: false });
+
+function applyTransform() {
+  canvas.style.transform = `translate(${panX}px,${panY}px) scale(${scale})`;
+  document.getElementById('zoom-label').textContent = Math.round(scale*100) + '%';
+}
+
+window.addEventListener('click', e => {
+  if (!e.target.closest('#ctxMenu')) ctxMenu.style.display = 'none';
+  if (!e.target.closest('#phasePopout') && !e.target.closest('.diamond-btn')) closePhaseMenu();
+});
+
+window.addEventListener('mousedown', e => {
+  if (activeGateId !== null && !e.target.closest('.gate')) hideGateActions(activeGateId);
+  if (activeEndId !== null && !e.target.closest('.project-end')) hideEndActions(activeEndId);
+  if (activeStartId !== null && !e.target.closest('.project-start')) hideStartActions(activeStartId);
+}, true);
+
+function zoom(delta) {
+  const cx = canvasWrap.clientWidth / 2, cy = canvasWrap.clientHeight / 2;
+  const prevScale = scale;
+  scale = Math.max(0.25, Math.min(2.5, scale + delta));
+  panX = cx - (cx - panX) * (scale / prevScale);
+  panY = cy - (cy - panY) * (scale / prevScale);
+  applyTransform();
+}
+
+function addConnection(fromId, toId) {
+  if (connections.find(c => c.from===fromId && c.to===toId)) return;
+  if (connections.find(c => c.from===toId && c.to===fromId)) return;
+  connections.push({ from: fromId, to: toId });
+  renderArrows();
+}
+
+function getConnectorPoint(key, side) {
+  if (typeof key === 'string' && key.startsWith('g')) {
+    const g = gates.find(g => g.id === parseInt(key.slice(1)));
+    if (!g) return null;
+    return side === 'from' ? { x: g.x + 64, y: g.y + 32 } : { x: g.x, y: g.y + 32 };
+  }
+  if (typeof key === 'string' && key.startsWith('e')) {
+    const en = projectEnds.find(e => e.id === parseInt(key.slice(1)));
+    if (!en) return null;
+    return side === 'from' ? { x: en.x + 72, y: en.y + 36 } : { x: en.x, y: en.y + 36 };
+  }
+  if (typeof key === 'string' && key.startsWith('s')) {
+    const s = projectStarts.find(s => s.id === parseInt(key.slice(1)));
+    if (!s) return null;
+    return side === 'from' ? { x: s.x + 72, y: s.y + 36 } : { x: s.x, y: s.y + 36 };
+  }
+  const n = nodes.find(n => n.id === key);
+  if (!n) return null;
+  return side === 'from' ? { x: n.x + 180, y: n.y + 50 } : { x: n.x, y: n.y + 50 };
+}
+
+function getPhaseIdx(key) {
+  if (typeof key === 'string' && key.startsWith('g')) return -1;
+  const n = nodes.find(n => n.id === key);
+  return n ? n.phaseIdx : -1;
+}
+
+function renderArrows() {
+  svg.querySelectorAll('path.arrow, line.phase-divider').forEach(p => p.remove());
+  gates.forEach(gate => {
+    const inConns  = connections.filter(c => c.to === 'g' + gate.id);
+    const outConns = connections.filter(c => c.from === 'g' + gate.id);
+    inConns.forEach(inConn => {
+      const fromPh = getPhaseIdx(inConn.from);
+      outConns.forEach(outConn => {
+        const toPh = getPhaseIdx(outConn.to);
+        if (fromPh === -1 || toPh === -1 || fromPh === toPh) return;
+        const lineX = gate.x + 64 + 36;
+        const ph = PHASES[toPh];
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.classList.add('phase-divider');
+        line.setAttribute('x1', lineX); line.setAttribute('y1', -60);
+        line.setAttribute('x2', lineX); line.setAttribute('y2', 600);
+        line.setAttribute('stroke', ph.color);
+        line.setAttribute('stroke-width', '1.5');
+        line.setAttribute('stroke-dasharray', '5 5');
+        line.setAttribute('opacity', '0.55');
+        svg.insertBefore(line, tempLine);
+      });
+    });
+  });
+  connections.forEach(conn => {
+    const fp = getConnectorPoint(conn.from, 'from');
+    const tp = getConnectorPoint(conn.to, 'to');
+    if (!fp || !tp) return;
+    const dx = Math.abs(tp.x - fp.x);
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.classList.add('arrow');
+    path.setAttribute('d', `M${fp.x},${fp.y} C${fp.x+dx/2},${fp.y} ${tp.x-dx/2},${tp.y} ${tp.x},${tp.y}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','rgba(0,0,0,0.7)');
+    path.setAttribute('stroke-width','2.5');
+    path.setAttribute('marker-end','url(#arrowhead)');
+    path.style.cursor = 'pointer';
+    path.addEventListener('click', () => {
+      connections = connections.filter(c => !(c.from===conn.from && c.to===conn.to));
+      renderArrows();
+    });
+    svg.insertBefore(path, tempLine);
+  });
+}
+
+function deleteNode(id) {
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+  showDeleteConfirm(id, node.title, () => {
+    nodes = nodes.filter(n => n.id !== id);
+    connections = connections.filter(c => c.from !== id && c.to !== id);
+    const el = document.getElementById('node-' + id);
+    if (el) el.remove();
+    renderArrows(); updateStatus();
+  });
+}
+
+function showDeleteConfirm(id, name, onConfirm) {
+  const existing = document.getElementById('delete-confirm');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'delete-confirm';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:24px;width:280px;box-shadow:0 16px 48px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:16px;">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#1a1a1f;">Delete node?</div>
+      <div style="font-size:13px;color:#6b6a68;line-height:1.5;">"<strong>${name}</strong>" will be permanently removed.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="delete-cancel" style="font-family:'Geist',sans-serif;font-size:12px;padding:7px 16px;border-radius:7px;border:1px solid rgba(0,0,0,0.14);background:transparent;color:#6b6a68;cursor:pointer;">Cancel</button>
+        <button id="delete-confirm-btn" style="font-family:'Geist',sans-serif;font-size:12px;font-weight:500;padding:7px 16px;border-radius:7px;border:none;background:#c03030;color:#fff;cursor:pointer;">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('delete-cancel').addEventListener('click', () => overlay.remove());
+  document.getElementById('delete-confirm-btn').addEventListener('click', () => { overlay.remove(); onConfirm(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ── PROJECT START / END ──
+let projectEnds = [], projectEndCounter = 0, activeEndId = null;
+let projectStarts = [], projectStartCounter = 0, activeStartId = null;
+
+function addProjectStart(x, y) {
+  const id = ++projectStartCounter;
+  projectStarts.push({ id, x, y, initiated: false });
+  const el = document.createElement('div');
+  el.className = 'project-start'; el.id = 'start-' + id;
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  el.innerHTML = `
+    <div class="project-start-label">Initiate<br>Project</div>
+    <div class="project-start-icon" id="start-icon-${id}">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </div>
+    <div class="port port-right" data-start-id="${id}" data-side="right"></div>
+  `;
+  canvas.appendChild(el);
+  setupProjectStartEvents(el, id);
+  return id;
+}
+
+function showStartActions(id) {
+  if (activeStartId !== null && activeStartId !== id) hideStartActions(activeStartId);
+  activeStartId = id;
+  const el = document.getElementById('start-' + id);
+  if (el.querySelector('.project-start-actions')) return;
+  const st = projectStarts.find(s => s.id === id);
+  const isInitiated = st && st.initiated;
+  const actions = document.createElement('div');
+  actions.className = 'project-start-actions';
+  const toggleBtn = isInitiated
+    ? `<button class="gate-action-btn gate-action-revert" title="Mark as not initiated" onmousedown="event.stopPropagation()" onclick="initiateProject(${id}, false); event.stopPropagation();">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg></button>`
+    : `<button class="gate-action-btn gate-action-approve" title="Mark as initiated" onmousedown="event.stopPropagation()" onclick="initiateProject(${id}, true); event.stopPropagation();">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+  const editBtn = `<button class="gate-action-btn gate-action-edit" title="Edit" onmousedown="event.stopPropagation()" onclick="openStartEditModal(${id}); event.stopPropagation();">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`;
+  actions.innerHTML = toggleBtn + editBtn;
+  el.appendChild(actions);
+}
+
+function hideStartActions(id) {
+  const el = document.getElementById('start-' + id);
+  if (!el) return;
+  const actions = el.querySelector('.project-start-actions');
+  if (actions) actions.remove();
+  if (activeStartId === id) activeStartId = null;
+}
+
+function initiateProject(id, initiated) {
+  const st = projectStarts.find(s => s.id === id);
+  if (!st) return;
+  st.initiated = initiated;
+  const el = document.getElementById('start-' + id);
+  const iconEl = document.getElementById('start-icon-' + id);
+  if (initiated) {
+    el.classList.add('start-initiated');
+    iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  } else {
+    el.classList.remove('start-initiated');
+    iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+  }
+  hideStartActions(id);
+}
+
+function setupProjectStartEvents(el, id) {
+  let mouseDownX = 0, mouseDownY = 0;
+  const DRAG_THRESHOLD = 4;
+  el.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('port') || e.button !== 0) return;
+    if (e.target.closest('.project-start-actions')) return;
+    e.stopPropagation();
+    mouseDownX = e.clientX; mouseDownY = e.clientY;
+    const rect = el.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left; dragOffY = e.clientY - rect.top;
+    dragging = null; draggingGate = null; draggingEnd = null; draggingStart = id;
+    el.classList.add('dragging');
+  });
+  el.addEventListener('click', e => {
+    if (e.target.classList.contains('port')) return;
+    if (e.target.closest('.project-start-actions')) return;
+    const dist = Math.hypot(e.clientX - mouseDownX, e.clientY - mouseDownY);
+    if (dist < DRAG_THRESHOLD) { if (activeStartId === id) hideStartActions(id); else showStartActions(id); }
+  });
+  el.querySelectorAll('.port').forEach(port => {
+    port.addEventListener('mousedown', e => {
+      e.stopPropagation(); e.preventDefault();
+      draggingStart = null;
+      connecting = { fromStartId: id };
+      tempLine.style.display = 'block';
+    });
+  });
+}
+
+function showEndActions(id) {
+  if (activeEndId !== null && activeEndId !== id) hideEndActions(activeEndId);
+  activeEndId = id;
+  const el = document.getElementById('end-' + id);
+  if (el.querySelector('.project-end-actions')) return;
+  const end = projectEnds.find(e => e.id === id);
+  const isCompleted = end && end.completed;
+  const actions = document.createElement('div');
+  actions.className = 'project-end-actions';
+  actions.innerHTML = isCompleted
+    ? `<button class="gate-action-btn gate-action-revert" title="Mark incomplete" onmousedown="event.stopPropagation()" onclick="completeProjectEnd(${id}, false); event.stopPropagation();">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg></button>`
+    : `<button class="gate-action-btn gate-action-approve" title="Mark complete" onmousedown="event.stopPropagation()" onclick="completeProjectEnd(${id}, true); event.stopPropagation();">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+  el.appendChild(actions);
+}
+
+function hideEndActions(id) {
+  const el = document.getElementById('end-' + id);
+  if (!el) return;
+  const actions = el.querySelector('.project-end-actions');
+  if (actions) actions.remove();
+  if (activeEndId === id) activeEndId = null;
+}
+
+function completeProjectEnd(id, completed) {
+  const end = projectEnds.find(e => e.id === id);
+  if (!end) return;
+  end.completed = completed;
+  const el = document.getElementById('end-' + id);
+  const iconEl = document.getElementById('end-icon-' + id);
+  if (completed) {
+    el.classList.add('end-completed');
+    iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  } else {
+    el.classList.remove('end-completed');
+    iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
+  }
+  hideEndActions(id);
+}
+
+function setupProjectEndEvents(el, id) {
+  let mouseDownX = 0, mouseDownY = 0;
+  const DRAG_THRESHOLD = 4;
+  el.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('port') || e.button !== 0) return;
+    if (e.target.closest('.project-end-actions')) return;
+    e.stopPropagation();
+    mouseDownX = e.clientX; mouseDownY = e.clientY;
+    const rect = el.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left; dragOffY = e.clientY - rect.top;
+    dragging = null; draggingGate = null; draggingEnd = id;
+    el.classList.add('dragging');
+  });
+  el.addEventListener('click', e => {
+    if (e.target.classList.contains('port')) return;
+    if (e.target.closest('.project-end-actions')) return;
+    const dist = Math.hypot(e.clientX - mouseDownX, e.clientY - mouseDownY);
+    if (dist < DRAG_THRESHOLD) { if (activeEndId === id) hideEndActions(id); else showEndActions(id); }
+  });
+  el.querySelectorAll('.port').forEach(port => {
+    port.addEventListener('mousedown', e => {
+      e.stopPropagation(); e.preventDefault();
+      draggingEnd = null;
+      connecting = { fromEndId: id };
+      tempLine.style.display = 'block';
+    });
+  });
+}
+
+function ctxDuplicate() {
+  if (!ctxTarget) return;
+  const node = nodes.find(n => n.id === ctxTarget);
+  if (node) addNode(node.phaseIdx, node.x + 20, node.y + 20);
+  ctxMenu.style.display = 'none';
+}
+
+function ctxDelete() {
+  if (!ctxTarget) return;
+  if (typeof ctxTarget === 'string' && ctxTarget.startsWith('gate-')) {
+    deleteGate(parseInt(ctxTarget.replace('gate-', '')));
+  } else { deleteNode(ctxTarget); }
+  ctxMenu.style.display = 'none';
+}
+
+function autoLayout() {
+  const sorted = [...nodes].sort((a, b) => a.phaseIdx - b.phaseIdx || a.id - b.id);
+  const startX = 80, rowY = 160, gapX = 240;
+  sorted.forEach((node, i) => {
+    node.x = startX + i * gapX; node.y = rowY;
+    const el = document.getElementById('node-' + node.id);
+    if (el) { el.style.left = node.x + 'px'; el.style.top = node.y + 'px'; }
+  });
+  renderArrows();
+}
+
+function updateStatus() {
+  document.getElementById('status-bar').textContent = nodes.length + ' node' + (nodes.length!==1?'s':'');
+}
+
+let editingNodeId = null;
+
+function openEditModal(id) {
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+  editingNodeId = id;
+  document.getElementById('editTitle').value = node.title || '';
+  document.getElementById('editDesc').value  = node.desc  || '';
+  document.getElementById('editOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('editTitle').focus(), 50);
+}
+
+function saveEditModal() {
+  const node = nodes.find(n => n.id === editingNodeId);
+  if (!node) return;
+  const newTitle = document.getElementById('editTitle').value.trim();
+  const newDesc  = document.getElementById('editDesc').value.trim();
+  if (newTitle) node.title = newTitle;
+  node.desc = newDesc;
+  const el = document.getElementById('node-' + editingNodeId);
+  if (el) {
+    const titleEl = el.querySelector('.node-title');
+    const descEl  = el.querySelector('.node-desc');
+    if (titleEl) titleEl.textContent = node.title;
+    if (descEl)  descEl.textContent  = node.desc;
+  }
+  closeEditModal();
+}
+
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('editOverlay')) return;
+  document.getElementById('editOverlay').style.display = 'none';
+  editingNodeId = null;
+}
+
+let editingStartId = null;
+
+function openStartEditModal(id) {
+  hideStartActions(id);
+  const st = projectStarts.find(s => s.id === id);
+  if (!st) return;
+  editingStartId = id;
+  document.getElementById('startEditProjectTitle').value = st.projectTitle || '';
+  document.getElementById('startEditProjectGoal').value  = st.projectGoal  || '';
+  document.getElementById('startEditStartDate').value    = st.startDate    || '';
+  document.getElementById('startEditEndDate').value      = st.endDate      || '';
+  document.getElementById('startEditOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('startEditProjectTitle').focus(), 50);
+}
+
+function saveStartEditModal() {
+  const st = projectStarts.find(s => s.id === editingStartId);
+  if (!st) return;
+  st.projectTitle = document.getElementById('startEditProjectTitle').value.trim();
+  st.projectGoal  = document.getElementById('startEditProjectGoal').value.trim();
+  st.startDate    = document.getElementById('startEditStartDate').value;
+  st.endDate      = document.getElementById('startEditEndDate').value;
+  const titleEl = document.getElementById('topbar-project-title');
+  if (titleEl && st.projectTitle) titleEl.textContent = st.projectTitle;
+  const goalEl = document.getElementById('topbar-goal');
+  if (goalEl && st.projectGoal) goalEl.textContent = st.projectGoal;
+  closeStartEditModal();
+}
+
+function closeStartEditModal(e) {
+  if (e && e.target !== document.getElementById('startEditOverlay')) return;
+  document.getElementById('startEditOverlay').style.display = 'none';
+  editingStartId = null;
+}
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('editOverlay').style.display === 'flex') {
+    if (e.key === 'Escape') closeEditModal({ target: document.getElementById('editOverlay') });
+  }
+  if (document.getElementById('customNodeOverlay').style.display === 'flex') {
+    if (e.key === 'Escape') closeCustomNodeModal({ target: document.getElementById('customNodeOverlay') });
+    if (e.key === 'Enter' && !e.shiftKey) saveCustomNodeModal();
+  }
+  if (document.getElementById('startEditOverlay').style.display === 'flex') {
+    if (e.key === 'Escape') closeStartEditModal({ target: document.getElementById('startEditOverlay') });
+  }
+  if (document.getElementById('otherNodeOverlay').style.display === 'flex') {
+    if (e.key === 'Escape') closeOtherNodeModal({ target: document.getElementById('otherNodeOverlay') });
+    if (e.key === 'Enter' && !e.shiftKey) saveOtherNodeModal();
+  }
+});
+
+function resetView() { scale = 1; panX = 40; panY = 40; applyTransform(); }
+resetView();
+init();
+
+function updateCanvasTop() {
+  const topbar = document.querySelector('.topbar');
+  const subbar = document.querySelector('.subbar');
+  const wrap = document.getElementById('canvasWrap');
+  if (topbar && subbar && wrap) wrap.style.top = (topbar.offsetHeight + subbar.offsetHeight) + 'px';
+}
+updateCanvasTop();
+window.addEventListener('resize', updateCanvasTop);
+</script>
+</body>
+</html>
