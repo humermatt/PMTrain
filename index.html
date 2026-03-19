@@ -1180,23 +1180,37 @@ async function saveGraph() {
 }
 
 async function loadGraph() {
-  // Ensure a row exists
-  await sb.from('graph_states')
-    .upsert({ id: GRAPH_ID, project_id: GRAPH_ID }, { onConflict: 'id', ignoreDuplicates: true });
+  const t0 = performance.now();
 
-  const { data, error } = await sb
-    .from('graph_states')
-    .select('*')
-    .eq('id', GRAPH_ID)
-    .single();
+  // Try to fetch the graph state directly — only insert if it doesn't exist
+  // This avoids a slow upsert write on every page load
+  const [graphRes, bcRes, ...tableRes] = await Promise.all([
+    sb.from('graph_states').select('*').eq('id', GRAPH_ID).maybeSingle(),
+    sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')+',status').eq('id', BC_ID).maybeSingle(),
+    ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
+  ]);
 
-  if (error || !data) { init(); return; }
+  console.log(`Supabase fetch: ${(performance.now() - t0).toFixed(0)}ms`);
+
+  let data = graphRes.data;
+
+  // If no row exists yet, insert one and use defaults
+  if (!data) {
+    const t1 = performance.now();
+    await sb.from('graph_states').insert({ id: GRAPH_ID, project_id: GRAPH_ID });
+    console.log(`Supabase insert (first load): ${(performance.now() - t1).toFixed(0)}ms`);
+    init();
+    return;
+  }
 
   const savedNodes   = JSON.parse(data.nodes   || '[]');
   const savedGates   = JSON.parse(data.gates   || '[]');
   const savedConns   = JSON.parse(data.connections || '[]');
   const savedStarts  = JSON.parse(data.project_starts || '[]');
   const savedEnds    = JSON.parse(data.project_ends   || '[]');
+
+  // Pre-compute BC progress from already-fetched data — no extra requests needed
+  const bcPrefetched = { bcRes, tableRes };
 
   // If nothing has been saved yet, run default init
   if (!savedNodes.length && !savedGates.length && !savedStarts.length) {
@@ -1331,12 +1345,15 @@ async function loadGraph() {
 
   // Restore connections
   connections.push(...savedConns);
+  const t2 = performance.now();
   renderArrows();
+  console.log(`renderArrows: ${(performance.now() - t2).toFixed(0)}ms`);
   updateStatus();
   suppressSave = false;
+  console.log(`Total loadGraph: ${(performance.now() - t0).toFixed(0)}ms`);
 
-  // Check BC node status from Supabase
-  refreshBCNode();
+  // Use already-fetched BC data — no extra Supabase call needed
+  refreshBCNode(bcPrefetched);
 }
 
 function openBusinessCase() {
@@ -1863,7 +1880,7 @@ function init() {
     for (let i = 0; i < placed.length - 1; i++) addConnection(placed[i].key, placed[i + 1].key);
     updateStatus();
     autoLayout();
-    refreshBCNode();
+    refreshBCNode(null);
   }, 50);
 }
 
@@ -1983,26 +2000,28 @@ function predecessorsComplete(id) {
 }
 
 // Fetch BC data from Supabase and compute status + percentage
-async function computeBCProgress() {
+// Accepts optional prefetched data to avoid extra network calls
+async function computeBCProgress(prefetched) {
   try {
-    const [bcRes, ...tableRes] = await Promise.all([
-      sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')).eq('id', BC_ID).single(),
-      ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
-    ]);
+    let bcRow, tableResults;
 
-    const row = bcRes.data || {};
+    if (prefetched) {
+      bcRow = prefetched.bcRes.data || {};
+      tableResults = prefetched.tableRes;
+    } else {
+      const [bcRes, ...tableRes] = await Promise.all([
+        sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')+',status').eq('id', BC_ID).maybeSingle(),
+        ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
+      ]);
+      bcRow = bcRes.data || {};
+      tableResults = tableRes;
+    }
 
-    // Count filled text fields
-    const filledText = BC_TEXT_FIELDS.filter(f => row[f] && row[f].trim() !== '').length;
-    // Count tables with at least one row
-    const filledTables = tableRes.filter(r => r.data && r.data.length > 0).length;
+    const filledText   = BC_TEXT_FIELDS.filter(f => bcRow[f] && bcRow[f].trim() !== '').length;
+    const filledTables = tableResults.filter(r => r.data && r.data.length > 0).length;
     const filled = filledText + filledTables;
-    const pct = Math.round((filled / BC_TOTAL_FIELDS) * 100);
-
-    // Also fetch status for Waiting Approval / Complete
-    const { data: statusRow } = await sb
-      .from('business_cases').select('status').eq('id', BC_ID).single();
-    const status = statusRow?.status || 'draft';
+    const pct    = Math.round((filled / BC_TOTAL_FIELDS) * 100);
+    const status = bcRow.status || 'draft';
 
     return { pct, status };
   } catch (e) {
@@ -2010,12 +2029,12 @@ async function computeBCProgress() {
   }
 }
 
-async function refreshBCNode() {
+async function refreshBCNode(prefetched) {
   const bcNode = nodes.find(n => n.title === 'Business Case');
   if (!bcNode) return;
 
   const prevComplete = predecessorsComplete(bcNode.id);
-  const { pct, status } = await computeBCProgress();
+  const { pct, status } = await computeBCProgress(prefetched);
 
   let newProgress;
   if (status === 'approved') {
@@ -2311,16 +2330,29 @@ function addConnection(fromId, toId) {
   scheduleSave();
 }
 
-function drawDividerLine(lineX, color) {
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.classList.add('phase-divider');
-  line.setAttribute('x1', lineX); line.setAttribute('y1', -2000);
-  line.setAttribute('x2', lineX); line.setAttribute('y2', 5000);
-  line.setAttribute('stroke', color);
-  line.setAttribute('stroke-width', '2.5');
-  line.setAttribute('stroke-dasharray', '6 4');
-  line.setAttribute('opacity', '0.75');
-  svg.insertBefore(line, tempLine);
+function drawDividerLine(lineX, colorLeft, colorRight) {
+  colorRight = colorRight || colorLeft;
+  const gap = 4; // gap between the two lines
+
+  const lineL = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  lineL.classList.add('phase-divider');
+  lineL.setAttribute('x1', lineX - gap); lineL.setAttribute('y1', -2000);
+  lineL.setAttribute('x2', lineX - gap); lineL.setAttribute('y2', 5000);
+  lineL.setAttribute('stroke', colorLeft);
+  lineL.setAttribute('stroke-width', '2');
+  lineL.setAttribute('stroke-dasharray', '6 4');
+  lineL.setAttribute('opacity', '0.75');
+  svg.insertBefore(lineL, tempLine);
+
+  const lineR = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  lineR.classList.add('phase-divider');
+  lineR.setAttribute('x1', lineX + gap); lineR.setAttribute('y1', -2000);
+  lineR.setAttribute('x2', lineX + gap); lineR.setAttribute('y2', 5000);
+  lineR.setAttribute('stroke', colorRight);
+  lineR.setAttribute('stroke-width', '2');
+  lineR.setAttribute('stroke-dasharray', '6 4');
+  lineR.setAttribute('opacity', '0.75');
+  svg.insertBefore(lineR, tempLine);
 }
 
 function getConnectorPoint(key, side) {
@@ -2369,9 +2401,7 @@ function renderArrows() {
         const toPh = getPhaseIdx(outConn.to);
         if (fromPh === -1 || toPh === -1 || fromPh === toPh) return;
         const lineX = gate.x + 64 + 40;
-        const ph = PHASES[toPh];
-        drawDividerLine(lineX, ph.color);
-        // This line is the right boundary of fromPh and left boundary of toPh
+        drawDividerLine(lineX, PHASES[fromPh].color, PHASES[toPh].color);
         dividerXByPhase[fromPh] = lineX;
         dividerXLeft[toPh] = lineX;
       });
@@ -2401,6 +2431,10 @@ function renderArrows() {
     phaseGroups[n.phaseIdx].push(n);
   });
 
+  // Use the highest node on the entire canvas so all labels sit on the same line
+  const globalHighestY = nodes.length ? Math.min(...nodes.map(n => n.y)) : 160;
+  const labelY = globalHighestY - 150;
+
   Object.keys(phaseGroups).forEach(phIdx => {
     phIdx = parseInt(phIdx);
     const phaseNodes = phaseGroups[phIdx];
@@ -2417,10 +2451,6 @@ function renderArrows() {
       : Math.max(...phaseNodes.map(n => n.x + 180));
 
     const centerX = (leftX + rightX) / 2;
-
-    // Y: 200px above the highest (lowest y value) node in this phase
-    const highestY = Math.min(...phaseNodes.map(n => n.y));
-    const labelY = highestY - 150;
 
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.classList.add('phase-label');
