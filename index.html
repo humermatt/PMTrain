@@ -2000,8 +2000,20 @@ window.addEventListener('mousemove', e => {
       const fromNode = nodes.find(n => n.id === connecting.fromId);
       fx = fromNode.x + 180; fy = fromNode.y + 50;
     }
-    const dx = mx - fx;
-    tempLine.setAttribute('d', `M${fx},${fy} C${fx+dx/2},${fy} ${mx-dx/2},${my} ${mx},${my}`);
+    const r = 12;
+    const midX = fx + (mx - fx) / 2;
+    let tempD;
+    if (Math.abs(fy - my) < 4) {
+      tempD = `M${fx},${fy} L${mx},${my}`;
+    } else {
+      const goDown = my > fy;
+      const vy1 = goDown ? fy + r : fy - r;
+      const vy2 = goDown ? my - r : my + r;
+      const t1x = midX > fx + r ? midX - r : fx + r;
+      const t2x = midX < mx - r ? midX + r : mx - r;
+      tempD = `M${fx},${fy} L${t1x},${fy} Q${midX},${fy} ${midX},${vy1} L${midX},${vy2} Q${midX},${my} ${t2x},${my} L${mx},${my}`;
+    }
+    tempLine.setAttribute('d', tempD);
   }
 });
 
@@ -2133,10 +2145,27 @@ function renderArrows() {
     const fp = getConnectorPoint(conn.from, 'from');
     const tp = getConnectorPoint(conn.to, 'to');
     if (!fp || !tp) return;
-    const dx = Math.abs(tp.x - fp.x);
     const path = document.createElementNS('http://www.w3.org/2000/svg','path');
     path.classList.add('arrow');
-    path.setAttribute('d', `M${fp.x},${fp.y} C${fp.x+dx/2},${fp.y} ${tp.x-dx/2},${tp.y} ${tp.x},${tp.y}`);
+
+    // Rounded right-angle path
+    const r = 12; // corner radius
+    const midX = fp.x + (tp.x - fp.x) / 2;
+    let d;
+    if (Math.abs(fp.y - tp.y) < 4) {
+      // Same row — straight line
+      d = `M${fp.x},${fp.y} L${tp.x},${tp.y}`;
+    } else {
+      // Horizontal → vertical → horizontal with rounded corners
+      const goDown = tp.y > fp.y;
+      const vy1 = goDown ? fp.y + r : fp.y - r;
+      const vy2 = goDown ? tp.y - r : tp.y + r;
+      const turn1x = midX > fp.x + r ? midX - r : fp.x + r;
+      const turn2x = midX < tp.x - r ? midX + r : tp.x - r;
+      d = `M${fp.x},${fp.y} L${turn1x},${fp.y} Q${midX},${fp.y} ${midX},${vy1} L${midX},${vy2} Q${midX},${tp.y} ${turn2x},${tp.y} L${tp.x},${tp.y}`;
+    }
+
+    path.setAttribute('d', d);
     path.setAttribute('fill','none');
     path.setAttribute('stroke','rgba(0,0,0,0.7)');
     path.setAttribute('stroke-width','2.5');
@@ -2368,7 +2397,7 @@ function ctxDelete() {
 
 function autoLayout() {
   const COL_W    = 220; // horizontal gap between columns
-  const ROW_H    = 180; // vertical gap between nodes in same column
+  const ROW_H    = 280; // vertical gap between nodes in same column
   const GATE_W   = 100; // narrower column for gates
   const START_X  = 80;
   const BASE_Y   = 200;
