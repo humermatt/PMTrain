@@ -1300,6 +1300,9 @@ async function loadGraph() {
   renderArrows();
   updateStatus();
   suppressSave = false;
+
+  // Check BC node status from Supabase
+  refreshBCNode();
 }
 
 function openBusinessCase() {
@@ -1760,6 +1763,7 @@ function init() {
     for (let i = 0; i < placed.length - 1; i++) addConnection(placed[i].key, placed[i + 1].key);
     updateStatus();
     autoLayout();
+    refreshBCNode();
   }, 50);
 }
 
@@ -1859,12 +1863,122 @@ function addNode(phaseIdx, x, y, silent, forceName) {
 }
 
 // ── PROGRESS ──
+
+// Fields counted for BC completion percentage
+const BC_TEXT_FIELDS  = ['summary','problem','current_situation','strategic_objectives',
+  'success_criteria','assumptions','constraints','recommended_option','alternatives','conclusion'];
+const BC_TABLE_FIELDS = ['cost_items','benefit_items','risks','stakeholders'];
+const BC_TOTAL_FIELDS = BC_TEXT_FIELDS.length + BC_TABLE_FIELDS.length; // 14
+
+// Check all predecessor nodes of a given node — are they all complete (progress === 100)?
+function predecessorsComplete(id) {
+  const incomingKeys = connections
+    .filter(c => c.to === id)
+    .map(c => c.from);
+  if (incomingKeys.length === 0) return true; // no predecessors = unblocked
+  return incomingKeys.every(key => {
+    const n = nodes.find(n => n.id === key);
+    return n && n.progress >= 100;
+  });
+}
+
+// Fetch BC data from Supabase and compute status + percentage
+async function computeBCProgress() {
+  try {
+    const [bcRes, ...tableRes] = await Promise.all([
+      sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')).eq('id', BC_ID).single(),
+      ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id', { count: 'exact', head: true }).eq('business_case_id', BC_ID)),
+    ]);
+
+    const row = bcRes.data || {};
+
+    // Count filled text fields
+    const filledText = BC_TEXT_FIELDS.filter(f => row[f] && row[f].trim() !== '').length;
+    // Count tables with at least one row
+    const filledTables = tableRes.filter(r => (r.count || 0) > 0).length;
+    const filled = filledText + filledTables;
+    const pct = Math.round((filled / BC_TOTAL_FIELDS) * 100);
+
+    // Also fetch status for Waiting Approval / Complete
+    const { data: statusRow } = await sb
+      .from('business_cases').select('status').eq('id', BC_ID).single();
+    const status = statusRow?.status || 'draft';
+
+    return { pct, status };
+  } catch (e) {
+    return { pct: 0, status: 'draft' };
+  }
+}
+
+async function refreshBCNode() {
+  const bcNode = nodes.find(n => n.title === 'Business Case');
+  if (!bcNode) return;
+
+  const prevComplete = predecessorsComplete(bcNode.id);
+  const { pct, status } = await computeBCProgress();
+
+  let newProgress;
+  if (status === 'approved') {
+    newProgress = 'complete';
+  } else if (status === 'review') {
+    newProgress = 'waiting_approval';
+  } else if (!prevComplete) {
+    newProgress = 'waiting';
+  } else if (pct === 0) {
+    newProgress = 'not_started';
+  } else {
+    newProgress = pct;
+  }
+
+  bcNode.bcStatus = newProgress;
+  bcNode.progress = typeof newProgress === 'number' ? newProgress : (newProgress === 'complete' ? 100 : 0);
+  renderProgress(bcNode.id);
+  scheduleSave();
+}
+
 function renderProgress(id) {
   const node = nodes.find(n => n.id === id);
   if (!node) return;
   const ph = PHASES[node.phaseIdx];
   const container = document.getElementById('progress-' + id);
   if (!container) return;
+
+  // Business Case node uses its own status-driven display
+  if (node.title === 'Business Case') {
+    const s = node.bcStatus;
+
+    if (s === 'waiting' || s === undefined) {
+      container.innerHTML = `<div class="node-progress-waiting">Waiting</div>`;
+
+    } else if (s === 'not_started') {
+      container.innerHTML = `<div class="node-progress-waiting" style="color:var(--text2)">Not Started</div>`;
+
+    } else if (s === 'waiting_approval') {
+      container.innerHTML = `
+        <div class="node-progress-header">
+          <span class="node-progress-label" style="color:#8c5a25">Waiting Approval</span>
+        </div>
+        <div class="node-progress-track">
+          <div class="node-progress-fill" style="width:100%; background:#c4854a"></div>
+        </div>`;
+
+    } else if (s === 'complete') {
+      container.innerHTML = `<div class="node-progress-done">✓ Complete</div>`;
+
+    } else if (typeof s === 'number') {
+      container.innerHTML = `
+        <div class="node-progress-header">
+          <span class="node-progress-label">In Progress</span>
+          <span class="node-progress-pct">${s}%</span>
+        </div>
+        <div class="node-progress-track">
+          <div class="node-progress-fill" style="width:${s}%; background:${ph.color}"></div>
+        </div>`;
+    }
+    return;
+  }
+
+  // All other nodes — manual progress
   const p = node.progress;
   if (p === 0) {
     container.innerHTML = `<div class="node-progress-waiting">Waiting</div>
@@ -1898,6 +2012,8 @@ function setProgress(id, value) {
   node.progress = Math.max(0, Math.min(100, value));
   renderProgress(id);
   scheduleSave();
+  // A progress change on any node may unblock the BC node
+  refreshBCNode();
 }
 
 // ── NODE EVENTS ──
@@ -2693,7 +2809,7 @@ Object.assign(window, {
   openEditModal, saveEditModal, closeEditModal,
   openStartEditModal, saveStartEditModal, closeStartEditModal,
   ctxDuplicate, ctxDelete, initiateProject, completeProjectEnd,
-  showDuplicateConfirm, dismissArrowMenu,
+  showDuplicateConfirm, dismissArrowMenu, refreshBCNode,
 });
 
 // ── BOOT: load from Supabase ──
