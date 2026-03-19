@@ -1160,6 +1160,8 @@ function scheduleSave() {
   saveTimer = setTimeout(saveGraph, 800);
 }
 
+const LS_KEY = 'pmtrain_graph_' + GRAPH_ID;
+
 async function saveGraph() {
   const payload = {
     project_id:     GRAPH_ID,
@@ -1173,63 +1175,38 @@ async function saveGraph() {
     scale:          scale,
     updated_at:     new Date().toISOString(),
   };
-  const { error } = await sb
-    .from('graph_states')
-    .upsert({ id: GRAPH_ID, ...payload }, { onConflict: 'id' });
-  if (error) console.error('Graph save failed:', JSON.stringify(error));
+
+  // Write to localStorage instantly — no waiting
+  try { localStorage.setItem(LS_KEY, JSON.stringify(payload)); } catch(e) {}
+
+  // Write to Supabase in background — don't await
+  sb.from('graph_states')
+    .upsert({ id: GRAPH_ID, ...payload }, { onConflict: 'id' })
+    .then(({ error }) => { if (error) console.error('Supabase save failed:', JSON.stringify(error)); });
 }
 
-async function loadGraph() {
-  const t0 = performance.now();
-
-  // Try to fetch the graph state directly — only insert if it doesn't exist
-  // This avoids a slow upsert write on every page load
-  const [graphRes, bcRes, ...tableRes] = await Promise.all([
-    sb.from('graph_states').select('*').eq('id', GRAPH_ID).maybeSingle(),
-    sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')+',status').eq('id', BC_ID).maybeSingle(),
-    ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
-  ]);
-
-  console.log(`Supabase fetch: ${(performance.now() - t0).toFixed(0)}ms`);
-
-  let data = graphRes.data;
-
-  // If no row exists yet, insert one and use defaults
-  if (!data) {
-    const t1 = performance.now();
-    await sb.from('graph_states').insert({ id: GRAPH_ID, project_id: GRAPH_ID });
-    console.log(`Supabase insert (first load): ${(performance.now() - t1).toFixed(0)}ms`);
-    init();
-    return;
-  }
-
+// ── RESTORE GRAPH FROM A DATA OBJECT ──
+function restoreFromData(data, bcPrefetched) {
   const savedNodes   = JSON.parse(data.nodes   || '[]');
   const savedGates   = JSON.parse(data.gates   || '[]');
   const savedConns   = JSON.parse(data.connections || '[]');
   const savedStarts  = JSON.parse(data.project_starts || '[]');
   const savedEnds    = JSON.parse(data.project_ends   || '[]');
 
-  // Pre-compute BC progress from already-fetched data — no extra requests needed
-  const bcPrefetched = { bcRes, tableRes };
-
-  // If nothing has been saved yet, run default init
   if (!savedNodes.length && !savedGates.length && !savedStarts.length) {
     suppressSave = true;
     init();
     suppressSave = false;
-    // Now save the freshly initialised default layout
     setTimeout(saveGraph, 200);
-    return;
+    return false; // signals that init ran instead
   }
 
-  // Restore pan/zoom
   suppressSave = true;
   panX = data.pan_x ?? 40;
   panY = data.pan_y ?? 40;
   scale = data.scale ?? 1;
   applyTransform();
 
-  // Restore project starts
   savedStarts.forEach(st => {
     projectStartCounter = Math.max(projectStartCounter, st.id);
     projectStarts.push(st);
@@ -1240,9 +1217,7 @@ async function loadGraph() {
       <div class="project-start-label">Initiate<br>Project</div>
       <div class="project-start-icon" id="start-icon-${st.id}">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          ${st.initiated
-            ? '<polyline points="20 6 9 17 4 12"/>'
-            : '<polygon points="5 3 19 12 5 21 5 3"/>'}
+          ${st.initiated ? '<polyline points="20 6 9 17 4 12"/>' : '<polygon points="5 3 19 12 5 21 5 3"/>'}
         </svg>
       </div>
       <div class="port port-right" data-start-id="${st.id}" data-side="right"></div>
@@ -1252,7 +1227,6 @@ async function loadGraph() {
     setupProjectStartEvents(el, st.id);
   });
 
-  // Restore nodes
   savedNodes.forEach(n => {
     nodeCounter = Math.max(nodeCounter, n.id);
     phaseCount[n.phaseIdx] = (phaseCount[n.phaseIdx] || 0) + 1;
@@ -1294,7 +1268,6 @@ async function loadGraph() {
     renderProgress(n.id);
   });
 
-  // Restore gates
   savedGates.forEach(g => {
     gateCounter = Math.max(gateCounter, g.id);
     gates.push(g);
@@ -1308,9 +1281,7 @@ async function loadGraph() {
       <div class="gate-label">${labelHTML}</div>
       <div class="gate-icon" id="gate-icon-${g.id}">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          ${g.approved
-            ? '<polyline points="20 6 9 17 4 12"/>'
-            : '<line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>'}
+          ${g.approved ? '<polyline points="20 6 9 17 4 12"/>' : '<line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>'}
         </svg>
       </div>
       <div class="port port-right" data-gate-id="${g.id}" data-side="right"></div>
@@ -1320,7 +1291,6 @@ async function loadGraph() {
     setupGateEvents(el, g.id);
   });
 
-  // Restore project ends
   savedEnds.forEach(en => {
     projectEndCounter = Math.max(projectEndCounter, en.id);
     projectEnds.push(en);
@@ -1332,9 +1302,7 @@ async function loadGraph() {
       <div class="project-end-label">Project End</div>
       <div class="project-end-icon" id="end-icon-${en.id}">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          ${en.completed
-            ? '<polyline points="20 6 9 17 4 12"/>'
-            : '<rect x="3" y="3" width="18" height="18" rx="2"/>'}
+          ${en.completed ? '<polyline points="20 6 9 17 4 12"/>' : '<rect x="3" y="3" width="18" height="18" rx="2"/>'}
         </svg>
       </div>
       <div class="port port-left" data-end-id="${en.id}" data-side="left"></div>
@@ -1343,17 +1311,75 @@ async function loadGraph() {
     setupProjectEndEvents(el, en.id);
   });
 
-  // Restore connections
   connections.push(...savedConns);
-  const t2 = performance.now();
   renderArrows();
-  console.log(`renderArrows: ${(performance.now() - t2).toFixed(0)}ms`);
   updateStatus();
   suppressSave = false;
-  console.log(`Total loadGraph: ${(performance.now() - t0).toFixed(0)}ms`);
 
-  // Use already-fetched BC data — no extra Supabase call needed
-  refreshBCNode(bcPrefetched);
+  if (bcPrefetched) refreshBCNode(bcPrefetched);
+  return true;
+}
+
+// ── CLEAR CANVAS (used when syncing from Supabase after cache render) ──
+function clearCanvas() {
+  nodes.forEach(n => { const el = document.getElementById('node-' + n.id); if (el) el.remove(); });
+  gates.forEach(g => { const el = document.getElementById('gate-' + g.id); if (el) el.remove(); });
+  projectStarts.forEach(s => { const el = document.getElementById('start-' + s.id); if (el) el.remove(); });
+  projectEnds.forEach(e => { const el = document.getElementById('end-' + e.id); if (el) el.remove(); });
+  nodes = []; gates = []; connections = []; projectStarts = []; projectEnds = [];
+  phaseCount = [0,0,0,0,0]; nodeCounter = 0; gateCounter = 0;
+  projectStartCounter = 0; projectEndCounter = 0;
+  svg.querySelectorAll('path.arrow, line.phase-divider, text.phase-label').forEach(el => el.remove());
+}
+
+async function loadGraph() {
+  // ── STEP 1: Render from localStorage instantly (zero delay) ──
+  let renderedFromCache = false;
+  try {
+    const cached = localStorage.getItem(LS_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      renderedFromCache = restoreFromData(data, null);
+    }
+  } catch(e) {}
+
+  // ── STEP 2: Fetch from Supabase in background ──
+  const [graphRes, bcRes, ...tableRes] = await Promise.all([
+    sb.from('graph_states').select('*').eq('id', GRAPH_ID).maybeSingle(),
+    sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')+',status').eq('id', BC_ID).maybeSingle(),
+    ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
+  ]);
+
+  const data = graphRes.data;
+  const bcPrefetched = { bcRes, tableRes };
+
+  // ── STEP 3: First ever load — no cache, no DB row ──
+  if (!data) {
+    if (!renderedFromCache) {
+      await sb.from('graph_states').insert({ id: GRAPH_ID, project_id: GRAPH_ID });
+      init();
+    }
+    return;
+  }
+
+  // ── STEP 4: Compare timestamps — if DB is newer than cache, re-render ──
+  const dbTime    = new Date(data.updated_at || 0).getTime();
+  let cacheTime = 0;
+  try {
+    const cached = localStorage.getItem(LS_KEY);
+    if (cached) cacheTime = new Date(JSON.parse(cached).updated_at || 0).getTime();
+  } catch(e) {}
+
+  if (dbTime > cacheTime) {
+    // DB has newer data — clear the cache render and re-render from DB
+    if (renderedFromCache) clearCanvas();
+    // Update localStorage with the fresher DB data
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ ...data, updated_at: data.updated_at })); } catch(e) {}
+    restoreFromData(data, bcPrefetched);
+  } else {
+    // Cache was up to date — just update the BC status silently
+    refreshBCNode(bcPrefetched);
+  }
 }
 
 function openBusinessCase() {
