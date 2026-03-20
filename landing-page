@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM.Train</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #f0f0f2;
+    --bg2:     #ffffff;
+    --bg3:     #e8e8eb;
+    --border:  rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.12);
+    --text:    #1a1a1f;
+    --text2:   #6b6a68;
+    --text3:   #a0a09e;
+    --accent:  #5a4fcf;
+    --sidebar: #16151c;
+    --sidebar2:#1f1e27;
+    --sidebar3:#2a2935;
+
+    --status-draft:      #e8e8eb;
+    --status-draft-text: #6b6a68;
+    --status-progress:   #1a2a4a;
+    --status-progress-text: #7aaad8;
+    --status-complete:   #1a3a2a;
+    --status-complete-text: #5abf8a;
+    --status-terminated: #e4e4e6;
+    --status-terminated-text: #a0a09e;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--sidebar);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: relative;
+    z-index: 10;
+  }
+
+  .sidebar-brand {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .sidebar-wordmark {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .sidebar-wordmark span {
+    color: var(--accent);
+  }
+  .sidebar-tagline {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 5px;
+    letter-spacing: 0.04em;
+    font-weight: 300;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sidebar-nav-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    padding: 12px 12px 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: var(--sidebar2); color: rgba(255,255,255,0.85); }
+  .nav-item.active { background: var(--sidebar3); color: #fff; }
+  .nav-item svg { flex-shrink: 0; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; }
+
+  .sidebar-footer {
+    padding: 16px 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .sidebar-user:hover { background: var(--sidebar2); }
+  .sidebar-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .sidebar-user-name {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 400;
+  }
+  .sidebar-user-role {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── TOP HEADER ── */
+  .main-header {
+    padding: 32px 40px 0;
+    flex-shrink: 0;
+  }
+  .main-header-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .main-header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.7px;
+    line-height: 1;
+  }
+  .main-header-sub {
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 6px;
+  }
+  .btn-new-project {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 11px 20px;
+    border-radius: 10px;
+    border: none;
+    background: var(--text);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+  .btn-new-project:hover {
+    background: #2e2e38;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 40px 20px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-chip:hover { background: var(--bg2); }
+  .filter-chip.active { background: var(--text); color: #fff; border-color: transparent; }
+  .filter-sep { flex: 1; }
+  .project-count {
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  /* ── PROJECT GRID ── */
+  .projects-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 40px 40px;
+  }
+  .projects-scroll::-webkit-scrollbar { width: 6px; }
+  .projects-scroll::-webkit-scrollbar-track { background: transparent; }
+  .projects-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── PROJECT CARD ── */
+  .project-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+    animation: card-in 0.3s ease both;
+  }
+  .project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.09);
+    border-color: var(--border2);
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    line-height: 1.25;
+    flex: 1;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+  .status-draft     { background: var(--status-draft);     color: var(--status-draft-text); }
+  .status-draft .status-dot { background: var(--status-draft-text); }
+  .status-progress  { background: var(--status-progress);  color: var(--status-progress-text); }
+  .status-progress .status-dot { background: var(--status-progress-text); }
+  .status-complete  { background: var(--status-complete);  color: var(--status-complete-text); }
+  .status-complete .status-dot { background: var(--status-complete-text); }
+  .status-terminated{ background: var(--status-terminated);color: var(--status-terminated-text); }
+  .status-terminated .status-dot { background: var(--status-terminated-text); }
+
+  .card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card-date {
+    font-size: 11px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .card-template {
+    font-size: 10px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  .card-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: 'Geist', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .card-btn:hover { background: var(--bg); color: var(--text); }
+  .card-btn.primary {
+    background: var(--text);
+    color: #fff;
+    border-color: transparent;
+  }
+  .card-btn.primary:hover { background: #2e2e38; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .empty-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: var(--bg3);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text3);
+  }
+  .empty-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .empty-sub { font-size: 13px; color: var(--text3); line-height: 1.6; max-width: 320px; }
+
+  /* ── SETTINGS PANEL ── */
+  .settings-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 40px 40px;
+    display: none;
+  }
+  .settings-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .settings-section-header {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .settings-section-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--bg3);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+  .settings-section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .settings-section-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 1px;
+  }
+  .settings-section-badge {
+    margin-left: auto;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--bg3);
+    color: var(--text3);
+    border: 1px solid var(--border2);
+  }
+  .settings-body { padding: 20px 24px; }
+  .settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .settings-field:last-child { margin-bottom: 0; }
+  .settings-field label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .settings-field input {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .settings-field input:focus { border-color: rgba(0,0,0,0.25); }
+  .settings-save {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--text);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .settings-save:hover { background: #2e2e38; }
+  .settings-placeholder {
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  /* ── NEW PROJECT MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    animation: fade-in 0.15s ease;
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .new-project-modal {
+    background: var(--bg2);
+    border-radius: 18px;
+    width: 720px;
+    max-width: calc(100vw - 40px);
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.1);
+    animation: modal-up 0.2s cubic-bezier(0.34,1.4,0.64,1);
+    display: flex;
+    flex-direction: column;
+  }
+  @keyframes modal-up {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-top {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .modal-heading {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.4px;
+    margin-bottom: 16px;
+  }
+  .modal-title-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .modal-title-field label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .modal-title-field input {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.15s;
+    letter-spacing: -0.3px;
+  }
+  .modal-title-field input:focus { border-color: var(--accent); }
+  .modal-title-field input::placeholder { color: var(--text3); font-weight: 700; }
+
+  .modal-body {
+    padding: 24px 32px 32px;
+    flex: 1;
+  }
+  .modal-body-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 16px;
+  }
+
+  /* Template grid */
+  .template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .template-card {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+  }
+  .template-card:hover {
+    border-color: var(--border2);
+    background: var(--bg2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  }
+  .template-card.selected {
+    border-color: var(--accent);
+    background: var(--bg2);
+    box-shadow: 0 0 0 3px rgba(90,79,207,0.12);
+  }
+  .template-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 10px; right: 12px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 20px;
+    text-align: center;
+  }
+  .template-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .template-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    line-height: 1.25;
+  }
+  .template-desc {
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .modal-cancel {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 9px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .modal-cancel:hover { background: var(--bg3); }
+  .modal-create {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 9px;
+    border: none;
+    background: var(--text);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .modal-create:hover { background: #2e2e38; }
+  .modal-create:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-wordmark">PM<span>.</span>Train</div>
+    <div class="sidebar-tagline">Project management, simplified</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-label">Workspace</div>
+    <button class="nav-item active" onclick="showView('projects')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Projects
+    </button>
+    <div class="sidebar-nav-label">Account</div>
+    <button class="nav-item" onclick="showView('settings')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user" onclick="showView('settings')">
+      <div class="sidebar-avatar" id="sidebar-avatar">U</div>
+      <div>
+        <div class="sidebar-user-name" id="sidebar-user-name">User</div>
+        <div class="sidebar-user-role">Project Manager</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- PROJECTS VIEW -->
+  <div id="view-projects" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+    <div class="main-header">
+      <div class="main-header-row">
+        <div>
+          <div class="main-header-title">Projects</div>
+          <div class="main-header-sub">Manage and track all your active projects.</div>
+        </div>
+        <button class="btn-new-project" onclick="openNewProjectModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Project
+        </button>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+        <button class="filter-chip" onclick="setFilter('draft', this)">Draft</button>
+        <button class="filter-chip" onclick="setFilter('in_progress', this)">In Progress</button>
+        <button class="filter-chip" onclick="setFilter('complete', this)">Complete</button>
+        <button class="filter-chip" onclick="setFilter('terminated', this)">Terminated</button>
+        <div class="filter-sep"></div>
+        <span class="project-count" id="project-count"></span>
+      </div>
+    </div>
+    <div class="projects-scroll">
+      <div class="projects-grid" id="projects-grid">
+        <!-- Cards rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS VIEW -->
+  <div id="view-settings" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+    <div class="main-header">
+      <div class="main-header-row" style="margin-bottom:24px;">
+        <div>
+          <div class="main-header-title">Settings</div>
+          <div class="main-header-sub">Manage your profile and preferences.</div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-panel" id="settings-panel" style="display:block;">
+
+      <!-- Profile -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div>
+            <div class="settings-section-title">Profile</div>
+            <div class="settings-section-sub">Your name and display preferences</div>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="settings-field">
+            <label>Display Name</label>
+            <input type="text" id="setting-name" placeholder="Your name" oninput="updateSidebarPreview()" />
+          </div>
+          <div class="settings-field">
+            <label>Role / Title</label>
+            <input type="text" id="setting-role" placeholder="e.g. Project Manager" />
+          </div>
+          <div class="settings-field">
+            <label>Email</label>
+            <input type="email" id="setting-email" placeholder="your@email.com" />
+          </div>
+          <button class="settings-save" onclick="saveProfile()">Save Profile</button>
+        </div>
+      </div>
+
+      <!-- Notifications placeholder -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div>
+            <div class="settings-section-title">Notifications</div>
+            <div class="settings-section-sub">Email and in-app alert preferences</div>
+          </div>
+          <span class="settings-section-badge">Coming soon</span>
+        </div>
+        <div class="settings-placeholder">Notification settings will be available in a future update.</div>
+      </div>
+
+      <!-- Organisation placeholder -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div>
+            <div class="settings-section-title">Organisation</div>
+            <div class="settings-section-sub">Team members, roles and company details</div>
+          </div>
+          <span class="settings-section-badge">Coming soon</span>
+        </div>
+        <div class="settings-placeholder">Organisation management will be available when authentication is enabled.</div>
+      </div>
+
+      <!-- Billing placeholder -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div>
+            <div class="settings-section-title">Billing & Plan</div>
+            <div class="settings-section-sub">Subscription, usage and invoices</div>
+          </div>
+          <span class="settings-section-badge">Coming soon</span>
+        </div>
+        <div class="settings-placeholder">Billing management will be available in a future update.</div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- NEW PROJECT MODAL -->
+<div class="modal-overlay" id="new-project-modal" style="display:none;" onclick="if(event.target===this)closeNewProjectModal()">
+  <div class="new-project-modal" onclick="event.stopPropagation()">
+    <div class="modal-top">
+      <div class="modal-heading">Start a new project</div>
+      <div class="modal-title-field">
+        <label>Project Name</label>
+        <input type="text" id="new-project-title" placeholder="e.g. Platform Redesign 2025" />
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-body-label">Choose a template</div>
+      <div class="template-grid" id="template-grid">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeNewProjectModal()">Cancel</button>
+        <button class="modal-create" id="modal-create-btn" onclick="createProject()" disabled>Create Project</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── STATE ──
+let projects = [];
+let activeFilter = 'all';
+let selectedTemplate = null;
+
+// ── TEMPLATES ──
+const TEMPLATES = [
+  {
+    id: 'simple_agile',
+    name: 'Simple Agile Project',
+    icon: '⚡',
+    iconBg: '#eef0ff',
+    desc: 'Sprint-based delivery with iterative planning cycles and backlog management.',
+  },
+  {
+    id: 'waterfall',
+    name: 'Waterfall Project',
+    icon: '🌊',
+    iconBg: '#e8f4ff',
+    desc: 'Sequential phase-gated delivery with formal sign-offs between stages.',
+  },
+  {
+    id: 'product_launch',
+    name: 'Product Launch',
+    icon: '🚀',
+    iconBg: '#fff0e8',
+    desc: 'Go-to-market focused workflow from concept through launch and post-launch review.',
+  },
+  {
+    id: 'it_infrastructure',
+    name: 'IT Infrastructure',
+    icon: '🖧',
+    iconBg: '#e8ffe8',
+    desc: 'Technical deployment pipeline for systems, networks and infrastructure rollouts.',
+  },
+  {
+    id: 'org_change',
+    name: 'Organisational Change',
+    icon: '🔄',
+    iconBg: '#fff8e0',
+    desc: 'People and process transformation with stakeholder engagement focus.',
+  },
+  {
+    id: 'research',
+    name: 'Research & Discovery',
+    icon: '🔍',
+    iconBg: '#f0fff4',
+    desc: 'Exploration and insight-driven projects with hypothesis testing cycles.',
+  },
+  {
+    id: 'custom',
+    name: 'Custom',
+    icon: '✦',
+    iconBg: '#f5f5f7',
+    desc: 'Start with the standard project structure and customise from there.',
+  },
+];
+
+// ── TOAST ──
+function showToast(msg, type = 'ok') {
+  let t = document.getElementById('landing-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'landing-toast';
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:9px 20px;border-radius:9px;font-family:'Geist',sans-serif;font-size:12px;font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = type === 'error' ? '#c03030' : '#1a1a1f';
+  t.style.color = '#fff';
+  t.style.opacity = '1';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.style.opacity = '0', 2200);
+}
+
+// ── LOAD PROJECTS ──
+async function loadProjects() {
+  const { data, error } = await sb
+    .from('projects')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { showToast('Failed to load projects', 'error'); return; }
+  projects = data || [];
+  renderProjects();
+}
+
+// ── RENDER PROJECTS ──
+function renderProjects() {
+  const grid   = document.getElementById('projects-grid');
+  const countEl = document.getElementById('project-count');
+
+  const filtered = activeFilter === 'all'
+    ? projects
+    : projects.filter(p => (p.status || 'draft') === activeFilter);
+
+  countEl.textContent = `${filtered.length} project${filtered.length !== 1 ? 's' : ''}`;
+
+  if (!filtered.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="empty-title">${activeFilter === 'all' ? 'No projects yet' : 'No ' + activeFilter.replace('_',' ') + ' projects'}</div>
+        <div class="empty-sub">${activeFilter === 'all' ? 'Create your first project to get started. Choose a template and PM.Train will set up your graph.' : 'No projects match this filter.'}</div>
+        ${activeFilter === 'all' ? `<button class="btn-new-project" onclick="openNewProjectModal()" style="margin-top:8px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Project
+        </button>` : ''}
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  filtered.forEach((p, i) => {
+    const status     = p.status || 'draft';
+    const statusInfo = getStatusInfo(status);
+    const dateStr    = p.end_date
+      ? new Date(p.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      : 'No end date set';
+
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.style.animationDelay = (i * 0.04) + 's';
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-title">${p.title || 'Untitled Project'}</div>
+        <div class="status-badge ${statusInfo.cls}">
+          <div class="status-dot"></div>
+          ${statusInfo.label}
+        </div>
+      </div>
+      <div class="card-meta">
+        <div class="card-date">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Planned completion: ${dateStr}
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="card-btn primary" onclick="openGraph('${p.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><line x1="6" y1="6" x2="10" y2="11"/><line x1="18" y1="6" x2="14" y2="11"/><line x1="6" y1="18" x2="10" y2="13"/><line x1="18" y1="18" x2="14" y2="13"/></svg>
+          Open Graph
+        </button>
+        <button class="card-btn" onclick="openStats('${p.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Stats
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function getStatusInfo(status) {
+  switch (status) {
+    case 'in_progress':  return { cls: 'status-progress',   label: 'In Progress' };
+    case 'complete':     return { cls: 'status-complete',   label: 'Complete' };
+    case 'terminated':   return { cls: 'status-terminated', label: 'Terminated' };
+    default:             return { cls: 'status-draft',      label: 'Draft' };
+  }
+}
+
+// ── FILTER ──
+function setFilter(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderProjects();
+}
+
+// ── NAV ──
+function showView(view) {
+  document.getElementById('view-projects').style.display  = view === 'projects'  ? 'flex' : 'none';
+  document.getElementById('view-settings').style.display  = view === 'settings'  ? 'flex' : 'none';
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => {
+    if (el.textContent.trim().toLowerCase().startsWith(view)) el.classList.add('active');
+  });
+}
+
+// ── NEW PROJECT MODAL ──
+function openNewProjectModal() {
+  selectedTemplate = null;
+  document.getElementById('new-project-title').value = '';
+  document.getElementById('modal-create-btn').disabled = true;
+  renderTemplates();
+  document.getElementById('new-project-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('new-project-title').focus(), 100);
+}
+
+function closeNewProjectModal() {
+  document.getElementById('new-project-modal').style.display = 'none';
+}
+
+function renderTemplates() {
+  const grid = document.getElementById('template-grid');
+  grid.innerHTML = '';
+  TEMPLATES.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'template-card';
+    card.innerHTML = `
+      <div class="template-icon" style="background:${t.iconBg}">${t.icon}</div>
+      <div class="template-name">${t.name}</div>
+      <div class="template-desc">${t.desc}</div>
+    `;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedTemplate = t;
+      updateCreateBtn();
+    });
+    grid.appendChild(card);
+  });
+}
+
+function updateCreateBtn() {
+  const title = document.getElementById('new-project-title').value.trim();
+  document.getElementById('modal-create-btn').disabled = !(title && selectedTemplate);
+}
+
+document.getElementById('new-project-title').addEventListener('input', updateCreateBtn);
+
+async function createProject() {
+  const title = document.getElementById('new-project-title').value.trim();
+  if (!title || !selectedTemplate) return;
+
+  const btn = document.getElementById('modal-create-btn');
+  btn.textContent = 'Creating…';
+  btn.disabled = true;
+
+  const { data, error } = await sb
+    .from('projects')
+    .insert({ title, status: 'draft' })
+    .select()
+    .single();
+
+  if (error || !data) {
+    showToast('Failed to create project', 'error');
+    btn.textContent = 'Create Project';
+    btn.disabled = false;
+    return;
+  }
+
+  closeNewProjectModal();
+  // All templates load the same default graph for now
+  window.location.href = `index.html?project=${data.id}`;
+}
+
+// ── OPEN GRAPH / STATS ──
+function openGraph(id) {
+  window.location.href = `index.html?project=${id}`;
+}
+
+function openStats(id) {
+  showToast('Stats page coming soon');
+}
+
+// ── SETTINGS ──
+function loadProfile() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('pmtrain_profile') || '{}');
+    if (saved.name)  { document.getElementById('setting-name').value  = saved.name;  updateSidebarPreview(); }
+    if (saved.role)  document.getElementById('setting-role').value  = saved.role;
+    if (saved.email) document.getElementById('setting-email').value = saved.email;
+  } catch(e) {}
+}
+
+function updateSidebarPreview() {
+  const name = document.getElementById('setting-name').value.trim();
+  if (name) {
+    document.getElementById('sidebar-user-name').textContent = name;
+    document.getElementById('sidebar-avatar').textContent = name.charAt(0).toUpperCase();
+  }
+}
+
+function saveProfile() {
+  const profile = {
+    name:  document.getElementById('setting-name').value.trim(),
+    role:  document.getElementById('setting-role').value.trim(),
+    email: document.getElementById('setting-email').value.trim(),
+  };
+  try { localStorage.setItem('pmtrain_profile', JSON.stringify(profile)); } catch(e) {}
+  updateSidebarPreview();
+  showToast('Profile saved');
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeNewProjectModal();
+});
+
+// ── EXPOSE ──
+Object.assign(window, {
+  showView, openNewProjectModal, closeNewProjectModal,
+  createProject, setFilter, openGraph, openStats, saveProfile, updateSidebarPreview,
+});
+
+// ── BOOT ──
+loadProfile();
+loadProjects();
+</script>
+</body>
+</html>
