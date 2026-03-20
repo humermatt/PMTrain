@@ -208,19 +208,22 @@
     flex-shrink: 0;
     flex-wrap: wrap;
   }
-  .filter-chip {
+  .filter-opt {
+    display: block;
+    width: 100%;
+    text-align: left;
     font-family: 'Geist', sans-serif;
     font-size: 12px;
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 1px solid var(--border2);
+    padding: 8px 12px;
+    border-radius: 7px;
+    border: none;
     background: transparent;
     color: var(--text2);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background 0.1s;
   }
-  .filter-chip:hover { background: var(--bg2); }
-  .filter-chip.active { background: var(--text); color: #fff; border-color: transparent; }
+  .filter-opt:hover { background: var(--bg3); color: var(--text); }
+  .filter-opt.active { background: var(--text); color: #fff; }
   .filter-sep { flex: 1; }
   .project-count {
     font-size: 11px;
@@ -486,7 +489,38 @@
     font-style: italic;
   }
 
-  /* ── NEW PROJECT MODAL ── */
+  .card-menu-btn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text3); border-radius: 6px;
+    transition: all 0.12s; flex-shrink: 0;
+  }
+  .card-menu-btn:hover { background: var(--bg3); color: var(--text2); }
+  .card-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 100;
+    min-width: 160px;
+  }
+  .card-menu-item {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; text-align: left;
+    font-family: 'Geist', sans-serif; font-size: 12px;
+    padding: 8px 12px; border-radius: 7px;
+    border: none; background: transparent;
+    color: var(--text2); cursor: pointer;
+    transition: background 0.1s;
+  }
+  .card-menu-item:hover { background: var(--bg3); color: var(--text); }
+  .card-menu-item.danger { color: #c03030; }
+  .card-menu-item.danger:hover { background: rgba(192,48,48,0.07); color: #c03030; }
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -719,19 +753,28 @@
           <div class="main-header-title">Projects</div>
           <div class="main-header-sub">Manage and track all your active projects.</div>
         </div>
-        <button class="btn-new-project" onclick="openNewProjectModal()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Project
-        </button>
-      </div>
-      <div class="filter-bar">
-        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-        <button class="filter-chip" onclick="setFilter('draft', this)">Draft</button>
-        <button class="filter-chip" onclick="setFilter('in_progress', this)">In Progress</button>
-        <button class="filter-chip" onclick="setFilter('complete', this)">Complete</button>
-        <button class="filter-chip" onclick="setFilter('terminated', this)">Terminated</button>
-        <div class="filter-sep"></div>
-        <span class="project-count" id="project-count"></span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+          <button class="btn-new-project" onclick="openNewProjectModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Project
+          </button>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="project-count" id="project-count"></span>
+            <div style="position:relative;">
+              <button id="filter-btn" onclick="toggleFilterDropdown()" style="display:flex;align-items:center;gap:7px;font-family:'Geist',sans-serif;font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='var(--bg2)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                <span id="filter-btn-label">All Projects</span>
+              </button>
+              <div id="filter-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:200;min-width:160px;">
+                <button class="filter-opt active" data-filter="all" onclick="setFilter('all', this)">All Projects</button>
+                <button class="filter-opt" data-filter="draft" onclick="setFilter('draft', this)">Draft</button>
+                <button class="filter-opt" data-filter="in_progress" onclick="setFilter('in_progress', this)">In Progress</button>
+                <button class="filter-opt" data-filter="complete" onclick="setFilter('complete', this)">Complete</button>
+                <button class="filter-opt" data-filter="terminated" onclick="setFilter('terminated', this)">Terminated</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="projects-scroll">
@@ -987,9 +1030,22 @@ function renderProjects() {
     card.innerHTML = `
       <div class="card-top">
         <div class="card-title">${p.title || 'Untitled Project'}</div>
-        <div class="status-badge ${statusInfo.cls}">
-          <div class="status-dot"></div>
-          ${statusInfo.label}
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <div class="status-badge ${statusInfo.cls}">
+            <div class="status-dot"></div>
+            ${statusInfo.label}
+          </div>
+          <div style="position:relative;">
+            <button class="card-menu-btn" onclick="toggleCardMenu(event,'${p.id}')" title="More options">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="card-menu" id="card-menu-${p.id}" style="display:none;">
+              <button class="card-menu-item danger" onclick="confirmDeleteProject('${p.id}','${(p.title||'Untitled Project').replace(/'/g,"\\'")}')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                Delete project
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="card-meta">
@@ -1022,11 +1078,63 @@ function getStatusInfo(status) {
   }
 }
 
-// ── FILTER ──
+// ── CARD MENU ──
+let activeCardMenu = null;
+
+function toggleCardMenu(e, id) {
+  e.stopPropagation();
+  const menu = document.getElementById('card-menu-' + id);
+  if (activeCardMenu && activeCardMenu !== menu) activeCardMenu.style.display = 'none';
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  activeCardMenu = menu.style.display === 'block' ? menu : null;
+}
+
+function dismissCardMenus() {
+  document.querySelectorAll('.card-menu').forEach(m => m.style.display = 'none');
+  activeCardMenu = null;
+}
+
+function confirmDeleteProject(id, title) {
+  dismissCardMenus();
+  const overlay = document.createElement('div');
+  overlay.id = 'delete-confirm-overlay';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);animation:fade-in 0.15s ease;`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:28px;width:360px;box-shadow:0 24px 80px rgba(0,0,0,0.2);animation:modal-up 0.2s cubic-bezier(0.34,1.4,0.64,1);">
+      <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#1a1a1f;letter-spacing:-0.3px;margin-bottom:12px;">Delete project?</div>
+      <p style="font-size:13px;color:#6b6a68;line-height:1.65;margin-bottom:8px;">You're about to delete <strong style="color:#1a1a1f;">${title}</strong>.</p>
+      <p style="font-size:13px;color:#c03030;line-height:1.65;margin-bottom:24px;">This will remove all archived data on the project. This cannot be undone.</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="document.getElementById('delete-confirm-overlay').remove()" style="font-family:'Geist',sans-serif;font-size:13px;padding:9px 18px;border-radius:9px;border:1px solid rgba(0,0,0,0.14);background:transparent;color:#6b6a68;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='#f0f0f2'" onmouseleave="this.style.background='transparent'">Cancel</button>
+        <button onclick="deleteProject('${id}')" style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;border:none;background:#c03030;color:#fff;cursor:pointer;transition:background 0.15s;letter-spacing:-0.2px;" onmouseenter="this.style.background='#a82828'" onmouseleave="this.style.background='#c03030'">Delete project</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function deleteProject(id) {
+  const overlay = document.getElementById('delete-confirm-overlay');
+  if (overlay) overlay.remove();
+  const { error } = await sb.from('projects').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  projects = projects.filter(p => p.id !== id);
+  renderProjects();
+  showToast('Project deleted');
+}
+function toggleFilterDropdown() {
+  const dd = document.getElementById('filter-dropdown');
+  dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+
 function setFilter(filter, btn) {
   activeFilter = filter;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.filter-opt').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
+  const labels = { all: 'All Projects', draft: 'Draft', in_progress: 'In Progress', complete: 'Complete', terminated: 'Terminated' };
+  document.getElementById('filter-btn-label').textContent = labels[filter] || 'All Projects';
+  document.getElementById('filter-dropdown').style.display = 'none';
   renderProjects();
 }
 
@@ -1148,13 +1256,28 @@ function saveProfile() {
 
 // ── KEYBOARD ──
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeNewProjectModal();
+  if (e.key === 'Escape') {
+    closeNewProjectModal();
+    document.getElementById('filter-dropdown').style.display = 'none';
+  }
+});
+
+document.addEventListener('click', e => {
+  const btn = document.getElementById('filter-btn');
+  const dd  = document.getElementById('filter-dropdown');
+  if (dd && !dd.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    dd.style.display = 'none';
+  }
+  if (!e.target.closest('.card-menu') && !e.target.closest('.card-menu-btn')) {
+    dismissCardMenus();
+  }
 });
 
 // ── EXPOSE ──
 Object.assign(window, {
   showView, openNewProjectModal, closeNewProjectModal,
   createProject, setFilter, openGraph, openStats, saveProfile, updateSidebarPreview,
+  toggleFilterDropdown, toggleCardMenu, confirmDeleteProject, deleteProject, dismissCardMenus,
 });
 
 // ── BOOT ──
