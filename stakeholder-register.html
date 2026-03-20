@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM.Train — Stakeholder Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #ededef;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.11);
+    --text: #1a1a1f;
+    --text2: #6b6a68;
+    --text3: #a0a09e;
+    --accent: #5a4fcf;
+    --c1: #7c6fcd; --c1l: rgba(124,111,205,0.15);
+    --c2: #5a9e7a; --c2l: rgba(90,158,122,0.15);
+    --c3: #4a8bc4; --c3l: rgba(74,139,196,0.15);
+    --c4: #c4854a; --c4l: rgba(196,133,74,0.15);
+    --c5: #c03030; --c5l: rgba(192,48,48,0.10);
+    --radius: 10px;
+  }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BARS ── */
+  .topbar {
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .subbar {
+    min-height: 40px;
+    max-height: 80px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 99;
+  }
+  .topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text3);
+    letter-spacing: -0.2px;
+  }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border2); }
+  .topbar-project-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .subbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .topbar-goal {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--accent);
+    opacity: 0.8;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+  }
+  .btn {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn-primary {
+    background: #1a1a1f;
+    color: #fff;
+    border-color: transparent;
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #2e2e38; }
+  .btn-empty {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.18);
+    background: rgba(0,0,0,0.06);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 80px;
+  }
+  .btn-empty:hover { background: rgba(0,0,0,0.11); color: var(--text2); }
+  .btn-empty.active { background: #1a1a1f; color: #fff; border-color: transparent; }
+
+  /* ── PAGE BODY ── */
+  .page-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 40px 60px;
+  }
+  .page-body::-webkit-scrollbar { width: 6px; }
+  .page-body::-webkit-scrollbar-track { background: transparent; }
+  .page-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 20px;
+  }
+  .page-header-eyebrow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .page-header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .page-header-subtitle {
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .page-header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+    align-items: flex-end;
+  }
+
+  /* ── SUMMARY METRICS ── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .metric-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    transition: box-shadow 0.15s;
+  }
+  .metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .metric-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .metric-sub { font-size: 11px; color: var(--text3); }
+
+  /* ── STAKEHOLDER TABLE ── */
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .table-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-card-header-left { display: flex; align-items: center; gap: 10px; }
+  .section-color-bar { width: 3px; height: 18px; border-radius: 2px; flex-shrink: 0; }
+  .table-card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Table */
+  .sh-table { width: 100%; border-collapse: collapse; }
+  .sh-table thead tr {
+    background: var(--bg3);
+  }
+  .sh-table th {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border2);
+    white-space: nowrap;
+  }
+  .sh-table td {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .sh-table tr:last-child td { border-bottom: none; }
+  .sh-table tbody tr { transition: background 0.1s; }
+  .sh-table tbody tr:hover { background: var(--bg); }
+
+  /* Empty state */
+  .table-empty {
+    padding: 40px 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text3);
+    font-style: italic;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .badge-high    { background: var(--c5l); color: #922020; border-color: rgba(192,48,48,0.25); }
+  .badge-medium  { background: var(--c4l); color: #8c5a25; border-color: rgba(196,133,74,0.3); }
+  .badge-low     { background: var(--c2l); color: #2c7d52; border-color: rgba(90,158,122,0.3); }
+  .badge-leading    { background: var(--c2l); color: #2c7d52; border-color: rgba(90,158,122,0.3); }
+  .badge-supporting { background: var(--c3l); color: #185fa5; border-color: rgba(74,139,196,0.3); }
+  .badge-neutral    { background: var(--bg3); color: var(--text3); border-color: var(--border2); }
+  .badge-resistant  { background: var(--c5l); color: #922020; border-color: rgba(192,48,48,0.25); }
+  .badge-internal   { background: var(--c1l); color: #534ab7; border-color: rgba(124,111,205,0.3); }
+  .badge-external   { background: var(--c4l); color: #8c5a25; border-color: rgba(196,133,74,0.3); }
+
+  /* Avatar */
+  .sh-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+
+  /* Row actions */
+  .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .row-btn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text3); border-radius: 5px; transition: all 0.12s;
+  }
+  .row-btn:hover { background: var(--bg3); color: var(--text); }
+  .row-btn.danger:hover { background: rgba(200,48,48,0.08); color: #c03030; }
+
+  /* ── ADD ROW BUTTON ── */
+  .add-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    color: var(--text3);
+    background: none;
+    border: none;
+    border-top: 1px dashed var(--border2);
+    padding: 12px 20px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .add-row-btn:hover { color: var(--text2); background: var(--bg); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 24px;
+    width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .modal-header {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .modal-field.full { grid-column: 1 / -1; }
+  .modal-field label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .modal-field input,
+  .modal-field textarea,
+  .modal-field select {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    padding: 8px 10px;
+    outline: none;
+    resize: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .modal-field input:focus,
+  .modal-field textarea:focus,
+  .modal-field select:focus { border-color: rgba(0,0,0,0.25); }
+  .modal-section-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    grid-column: 1 / -1;
+    margin-top: 4px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+  .modal-cancel {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .modal-cancel:hover { background: var(--bg3); }
+  .modal-save {
+    font-family: 'Geist', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: none;
+    background: #1a1a1f;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-save:hover { background: #2e2e38; }
+
+  /* ── BACK MODAL ── */
+  .back-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+
+  /* ── STATUS CHIP ── */
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .status-chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-draft    { background: var(--bg3); color: var(--text3); border-color: var(--border2); }
+  .status-draft .status-chip-dot { background: var(--text3); }
+  .status-review   { background: var(--c4l); color: #8c5a25; border-color: rgba(196,133,74,0.3); }
+  .status-review .status-chip-dot { background: var(--c4); }
+  .status-approved { background: var(--c2l); color: #2c7d52; border-color: rgba(90,158,122,0.3); }
+  .status-approved .status-chip-dot { background: var(--c2); }
+
+  /* Sortable headers */
+  .sh-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .sh-table th.sortable:hover { color: var(--text2); }
+  .sh-table th.sortable.asc  .sort-icon::after { content: ' ↑'; }
+  .sh-table th.sortable.desc .sort-icon::after { content: ' ↓'; }
+  .sort-icon { font-size: 9px; color: var(--text3); margin-left: 2px; }
+  .sh-table th.sortable.asc .sort-icon,
+  .sh-table th.sortable.desc .sort-icon { color: var(--accent); }
+  #filter-bar { display: flex; }
+
+  /* Approver */
+  #approver-wrap { position: relative; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-title">PM.Train</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-project-title" id="topbar-project-title">Project New Technology</span>
+  <div class="topbar-actions">
+    <span id="doc-status-chip" class="status-chip status-draft">
+      <span class="status-chip-dot"></span>Draft
+    </span>
+    <button class="btn" onclick="cycleStatus()">Change Status</button>
+    <button class="btn btn-primary" onclick="exportDoc()">Export PDF</button>
+  </div>
+</div>
+
+<!-- SUB BAR -->
+<div class="subbar">
+  <div class="topbar-goal" id="topbar-goal">The goal of this project is to get projects back on the rails — delivering clarity, momentum, and confidence to every stakeholder.</div>
+  <div class="subbar-actions">
+    <button class="btn-empty" onclick="confirmBackToGraph()">← Back to Graph</button>
+  </div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-header-eyebrow">Project Initiation</div>
+      <div class="page-header-title">Stakeholder Register</div>
+      <div class="page-header-subtitle">Identify, classify and define engagement strategies for all project stakeholders.</div>
+    </div>
+    <div class="page-header-actions">
+      <span style="font-size:11px; color:var(--text3);">Last edited <strong id="last-edited" style="color:var(--text2);">—</strong></span>
+      <div id="approver-wrap">
+        <div id="approver-display" onclick="toggleApproverPopout()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s;" onmouseenter="this.style.background='var(--bg3)';this.style.borderColor='var(--border2)';" onmouseleave="this.style.background='transparent';this.style.borderColor='transparent';">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Approver: <strong id="approver-name" style="color:var(--text2);">None</strong>
+        </div>
+        <div id="approver-popout" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border2);border-radius:10px;padding:14px;width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.13);z-index:200;">
+          <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">Assign Approver</div>
+          <input id="approver-input" type="text" placeholder="Enter approver name…" style="font-family:'Geist',sans-serif;font-size:13px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;outline:none;width:100%;transition:border-color 0.15s;" onkeydown="if(event.key==='Enter') saveApprover(); if(event.key==='Escape') closeApproverPopout();" />
+          <div style="display:flex;gap:6px;margin-top:12px;justify-content:flex-end;">
+            <button onclick="clearApprover()" style="font-family:'Geist',sans-serif;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;">Clear</button>
+            <button onclick="saveApprover()" style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;background:#1a1a1f;color:#fff;cursor:pointer;">Assign</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Total Stakeholders</div>
+      <div class="metric-value" id="metric-total">—</div>
+      <div class="metric-sub">Identified</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">High Influence</div>
+      <div class="metric-value" id="metric-high-influence">—</div>
+      <div class="metric-sub">Require close management</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Resistant</div>
+      <div class="metric-value" id="metric-resistant" style="color:#c03030">—</div>
+      <div class="metric-sub">Need engagement focus</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">External</div>
+      <div class="metric-value" id="metric-external">—</div>
+      <div class="metric-sub">Outside organisation</div>
+    </div>
+  </div>
+
+  <!-- Stakeholder Table -->
+  <div class="table-card">
+    <div class="table-card-header">
+      <div class="table-card-header-left">
+        <div class="section-color-bar" style="background:var(--c1)"></div>
+        <div class="table-card-title">Stakeholders</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="openImportModal()">↑ Populate from Document</button>
+        <button class="btn btn-primary" onclick="openModal()">+ Add Stakeholder</button>
+      </div>
+    </div>
+    <div id="table-container">
+
+      <!-- Search & Filter bar -->
+      <div id="filter-bar" style="display:none; padding:12px 20px; border-bottom:1px solid var(--border); background:var(--bg); gap:10px; flex-wrap:wrap; align-items:center;">
+        <div style="position:relative; flex:1; min-width:160px;">
+          <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);pointer-events:none;" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search-input" type="text" placeholder="Search by name, role, department…" oninput="applyFilters()" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text);background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px 6px 30px;outline:none;width:100%;transition:border-color 0.15s;" onfocus="this.style.borderColor='rgba(0,0,0,0.25)'" onblur="this.style.borderColor='var(--border2)'" />
+        </div>
+        <select id="filter-influence" onchange="applyFilters()" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;outline:none;cursor:pointer;">
+          <option value="">All Influence</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <select id="filter-support" onchange="applyFilters()" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;outline:none;cursor:pointer;">
+          <option value="">All Support</option>
+          <option value="leading">Leading</option>
+          <option value="supporting">Supporting</option>
+          <option value="neutral">Neutral</option>
+          <option value="resistant">Resistant</option>
+        </select>
+        <select id="filter-classification" onchange="applyFilters()" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;outline:none;cursor:pointer;">
+          <option value="">All Types</option>
+          <option value="internal">Internal</option>
+          <option value="external">External</option>
+        </select>
+        <button onclick="clearFilters()" id="clear-filters-btn" style="display:none;font-family:'Geist',sans-serif;font-size:11px;padding:6px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap;" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='transparent'">✕ Clear</button>
+        <span id="filter-count" style="font-size:11px;color:var(--text3);white-space:nowrap;"></span>
+      </div>
+
+      <div class="table-empty" id="table-empty">No stakeholders added yet. Click <strong>+ Add Stakeholder</strong> to get started.</div>
+      <div class="table-empty" id="table-no-results" style="display:none;">No stakeholders match your filters.</div>
+      <table class="sh-table" id="sh-table" style="display:none;">
+        <thead>
+          <tr>
+            <th class="sortable" data-col="name" onclick="sortBy('name')">Name <span class="sort-icon">↕</span></th>
+            <th class="sortable" data-col="title_position" onclick="sortBy('title_position')">Title / Role <span class="sort-icon">↕</span></th>
+            <th class="sortable" data-col="department" onclick="sortBy('department')">Department <span class="sort-icon">↕</span></th>
+            <th>Classification</th>
+            <th class="sortable" data-col="influence" onclick="sortBy('influence')">Influence <span class="sort-icon">↕</span></th>
+            <th class="sortable" data-col="interest" onclick="sortBy('interest')">Interest <span class="sort-icon">↕</span></th>
+            <th class="sortable" data-col="support" onclick="sortBy('support')">Support <span class="sort-icon">↕</span></th>
+            <th>Engagement</th>
+            <th class="sortable" data-col="owner" onclick="sortBy('owner')">Owner <span class="sort-icon">↕</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sh-tbody"></tbody>
+      </table>
+      <button class="add-row-btn" id="add-row-btn" style="display:none;" onclick="openModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add stakeholder
+      </button>
+    </div>
+  </div>
+
+  <!-- Notes Card -->
+  <div class="table-card">
+    <div class="table-card-header">
+      <div class="table-card-header-left">
+        <div class="section-color-bar" style="background:var(--text3)"></div>
+        <div class="table-card-title">Register Notes</div>
+      </div>
+    </div>
+    <div style="padding:16px 20px;">
+      <div id="f-notes" style="font-size:13px;color:var(--text3);font-style:italic;min-height:60px;padding:8px 10px;border-radius:7px;border:1px solid transparent;cursor:text;line-height:1.65;transition:all 0.15s;white-space:pre-wrap;" onclick="activateNotes()" onmouseenter="this.style.background='var(--bg)';this.style.borderColor='var(--border2)';" onmouseleave="if(!document.getElementById('fi-notes').style.display||document.getElementById('fi-notes').style.display==='none'){this.style.background='transparent';this.style.borderColor='transparent';}">Add notes about the stakeholder identification process, workshop outcomes, or other context…</div>
+      <textarea id="fi-notes" rows="4" style="display:none;font-family:'Geist',sans-serif;font-size:13px;color:var(--text);background:var(--bg3);border:1px solid rgba(0,0,0,0.18);border-radius:7px;padding:8px 10px;outline:none;resize:none;width:100%;line-height:1.65;transition:border-color 0.15s;" onblur="deactivateNotes()" oninput="scheduleNoteSave()"></textarea>
+    </div>
+  </div>
+
+</div><!-- /page-body -->
+
+
+<!-- ADD / EDIT STAKEHOLDER MODAL -->
+<div class="modal-overlay" id="sh-modal" style="display:none;" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header" id="modal-title">Add Stakeholder</div>
+    <div class="modal-grid">
+
+      <div class="modal-section-label">Identification</div>
+
+      <div class="modal-field full">
+        <label>Full Name</label>
+        <input type="text" id="f-name" placeholder="e.g. Sarah Mitchell" />
+      </div>
+      <div class="modal-field">
+        <label>Title / Position</label>
+        <input type="text" id="f-title" placeholder="e.g. Project Sponsor" />
+      </div>
+      <div class="modal-field">
+        <label>Department</label>
+        <input type="text" id="f-dept" placeholder="e.g. Finance" />
+      </div>
+      <div class="modal-field">
+        <label>Email</label>
+        <input type="email" id="f-email" placeholder="name@company.com" />
+      </div>
+      <div class="modal-field">
+        <label>Phone</label>
+        <input type="text" id="f-phone" placeholder="+1 555 000 0000" />
+      </div>
+
+      <div class="modal-section-label">Classification & Assessment</div>
+
+      <div class="modal-field">
+        <label>Classification</label>
+        <select id="f-classification">
+          <option value="">— Select —</option>
+          <option value="internal">Internal</option>
+          <option value="external">External</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Primary / Secondary</label>
+        <select id="f-primary">
+          <option value="">— Select —</option>
+          <option value="primary">Primary</option>
+          <option value="secondary">Secondary</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Level of Influence</label>
+        <select id="f-influence">
+          <option value="">— Select —</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Level of Interest</label>
+        <select id="f-interest">
+          <option value="">— Select —</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="modal-field full">
+        <label>Level of Support</label>
+        <select id="f-support">
+          <option value="">— Select —</option>
+          <option value="leading">Leading</option>
+          <option value="supporting">Supporting</option>
+          <option value="neutral">Neutral</option>
+          <option value="resistant">Resistant</option>
+        </select>
+      </div>
+      <div class="modal-field full">
+        <label>Expectations / Concerns</label>
+        <textarea id="f-expectations" rows="2" placeholder="What does this stakeholder hope to achieve or what are their concerns?"></textarea>
+      </div>
+
+      <div class="modal-section-label">Engagement Strategy</div>
+
+      <div class="modal-field">
+        <label>Communication Method</label>
+        <select id="f-comm-method">
+          <option value="">— Select —</option>
+          <option value="Email">Email</option>
+          <option value="Meeting">Meeting</option>
+          <option value="Report">Report</option>
+          <option value="Presentation">Presentation</option>
+          <option value="Workshop">Workshop</option>
+          <option value="Informal">Informal</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Frequency</label>
+        <select id="f-frequency">
+          <option value="">— Select —</option>
+          <option value="Daily">Daily</option>
+          <option value="Weekly">Weekly</option>
+          <option value="Fortnightly">Fortnightly</option>
+          <option value="Monthly">Monthly</option>
+          <option value="Milestone-based">Milestone-based</option>
+          <option value="As needed">As needed</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Engagement Strategy</label>
+        <select id="f-strategy">
+          <option value="">— Select —</option>
+          <option value="Manage Closely">Manage Closely</option>
+          <option value="Keep Satisfied">Keep Satisfied</option>
+          <option value="Keep Informed">Keep Informed</option>
+          <option value="Monitor">Monitor</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Owner</label>
+        <input type="text" id="f-owner" placeholder="Responsible team member" />
+      </div>
+      <div class="modal-field full">
+        <label>Notes</label>
+        <textarea id="f-sh-notes" rows="2" placeholder="Any additional context or engagement notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-save" onclick="saveModal()">Save Stakeholder</button>
+    </div>
+  </div>
+</div>
+
+<!-- BACK TO GRAPH MODAL -->
+<div class="modal-overlay" id="back-modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="width:340px;" onclick="event.stopPropagation()">
+    <div class="modal-header">Return to Graph?</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-top:-4px;">You have unsaved changes. What would you like to do before leaving?</p>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="modal-cancel" onclick="document.getElementById('back-modal').style.display='none'">Stay here</button>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-cancel" style="color:#c03030;border-color:rgba(192,48,48,0.25);" onclick="discardAndLeave()">Discard</button>
+        <button class="modal-save" onclick="saveAndLeave()">Save &amp; Return</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POPULATE FROM DOCUMENT MODAL -->
+<div class="modal-overlay" id="import-modal" style="display:none;" onclick="closeImportModal(event)">
+  <div class="modal" style="width:540px;" onclick="event.stopPropagation()">
+    <div class="modal-header">Populate from Document</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-top:-4px;">
+      Paste any document, email, meeting notes, or stakeholder list below. Claude will extract stakeholders and pre-fill the register for you to review before saving.
+    </p>
+    <div class="modal-field full">
+      <label>Document Content</label>
+      <textarea id="import-text" rows="10" placeholder="Paste your document text here…&#10;&#10;e.g. Project Charter, org chart descriptions, meeting notes, emails listing project contacts…" style="font-family:'Geist',sans-serif;font-size:13px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;outline:none;resize:vertical;width:100%;line-height:1.65;transition:border-color 0.15s;" onfocus="this.style.borderColor='rgba(0,0,0,0.25)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+    </div>
+    <div id="import-status" style="display:none;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:8px;">
+      <svg id="import-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      <span id="import-status-text">Extracting stakeholders…</span>
+    </div>
+    <div id="import-preview" style="display:none;">
+      <div style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;" id="import-preview-label">Stakeholders found</div>
+      <div id="import-preview-list" style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeImportModal()">Cancel</button>
+      <button class="modal-save" id="import-extract-btn" onclick="runExtraction()">Extract Stakeholders</button>
+      <button class="modal-save" id="import-save-btn" style="display:none;background:#2c7d52;" onclick="saveImported()">Add to Register</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.import-preview-card {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+}
+.import-preview-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+}
+.import-preview-field {
+  font-size: 11px;
+  color: var(--text2);
+}
+.import-preview-field span {
+  color: var(--text3);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+}
+</style>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const params = new URLSearchParams(window.location.search);
+const PROJECT_ID = params.get('id') || '00000000-0000-0000-0000-000000000001';
+
+// ── STATE ──
+let stakeholders = [];
+let editingId    = null;
+let statusIdx    = 0;
+let notesSaveTimer = null;
+let sortCol = null;
+let sortDir = 'asc'; // 'asc' | 'desc'
+
+// ── SORT & FILTER ──
+const LEVEL_ORDER = { high: 0, medium: 1, low: 2, leading: 0, supporting: 1, neutral: 2, resistant: 3 };
+
+function sortBy(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol = col;
+    sortDir = 'asc';
+  }
+  // Update header indicators
+  document.querySelectorAll('.sh-table th.sortable').forEach(th => {
+    th.classList.remove('asc', 'desc');
+    if (th.dataset.col === col) th.classList.add(sortDir);
+  });
+  renderTable();
+}
+
+function applyFilters() {
+  const clearBtn = document.getElementById('clear-filters-btn');
+  const search   = document.getElementById('search-input').value.toLowerCase();
+  const influence = document.getElementById('filter-influence').value;
+  const support   = document.getElementById('filter-support').value;
+  const classif   = document.getElementById('filter-classification').value;
+  const hasFilter = search || influence || support || classif;
+  clearBtn.style.display = hasFilter ? 'inline-flex' : 'none';
+  renderTable();
+}
+
+function clearFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('filter-influence').value = '';
+  document.getElementById('filter-support').value = '';
+  document.getElementById('filter-classification').value = '';
+  document.getElementById('clear-filters-btn').style.display = 'none';
+  renderTable();
+}
+
+function getFilteredSorted() {
+  const search    = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const influence = document.getElementById('filter-influence')?.value || '';
+  const support   = document.getElementById('filter-support')?.value || '';
+  const classif   = document.getElementById('filter-classification')?.value || '';
+
+  let result = stakeholders.filter(s => {
+    if (search && !['name','title_position','department','owner','email']
+      .some(f => (s[f] || '').toLowerCase().includes(search))) return false;
+    if (influence && s.influence !== influence) return false;
+    if (support   && s.support   !== support)   return false;
+    if (classif   && s.classification !== classif) return false;
+    return true;
+  });
+
+  if (sortCol) {
+    result = [...result].sort((a, b) => {
+      const av = (a[sortCol] || '').toLowerCase();
+      const bv = (b[sortCol] || '').toLowerCase();
+      // Use level order for influence/interest/support
+      if (LEVEL_ORDER[av] !== undefined && LEVEL_ORDER[bv] !== undefined) {
+        return sortDir === 'asc'
+          ? LEVEL_ORDER[av] - LEVEL_ORDER[bv]
+          : LEVEL_ORDER[bv] - LEVEL_ORDER[av];
+      }
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+  }
+
+  return result;
+}
+
+const STATUSES = [
+  { key: 'draft',    label: 'Draft',      cls: 'status-draft'    },
+  { key: 'review',   label: 'In Review',  cls: 'status-review'   },
+  { key: 'approved', label: 'Approved',   cls: 'status-approved' },
+];
+
+const AVATAR_COLORS = ['#7c6fcd','#5a9e7a','#4a8bc4','#c4854a','#c03030','#3a9ebf','#c45a8a'];
+
+// ── TOAST ──
+function showToast(msg, type = 'saved') {
+  let t = document.getElementById('sr-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'sr-toast';
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:12px;font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = type === 'error' ? '#c03030' : '#1a1a1f';
+  t.style.color = '#fff';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.opacity = '0', 2200);
+}
+
+// ── LOAD ──
+async function loadAll() {
+  const [shRes, regRes, projRes] = await Promise.all([
+    sb.from('stakeholder_register_entries').select('*').eq('project_id', PROJECT_ID).order('created_at'),
+    sb.from('stakeholder_registers').select('*').eq('id', PROJECT_ID).maybeSingle(),
+    sb.from('projects').select('title, goal').eq('id', PROJECT_ID).maybeSingle(),
+  ]);
+
+  // Project title & goal
+  if (projRes.data) {
+    const p = projRes.data;
+    if (p.title) document.getElementById('topbar-project-title').textContent = p.title;
+    if (p.goal)  document.getElementById('topbar-goal').textContent = p.goal;
+  }
+
+  // Register metadata (status, approver, notes, updated_at)
+  if (regRes.data) {
+    const r = regRes.data;
+    if (r.status) {
+      const idx = STATUSES.findIndex(s => s.key === r.status);
+      if (idx > -1) { statusIdx = idx; applyStatus(); }
+    }
+    if (r.approver) {
+      document.getElementById('approver-name').textContent = r.approver;
+      document.getElementById('approver-name').style.color = 'var(--text)';
+    }
+    if (r.notes) {
+      const display = document.getElementById('f-notes');
+      display.textContent = r.notes;
+      display.style.color = 'var(--text)';
+      display.style.fontStyle = 'normal';
+      document.getElementById('fi-notes').value = r.notes;
+    }
+    if (r.updated_at) {
+      const d = new Date(r.updated_at);
+      document.getElementById('last-edited').textContent = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+  }
+
+  // Stakeholders
+  if (shRes.data) {
+    stakeholders = shRes.data;
+    renderTable();
+  }
+}
+
+// ── RENDER TABLE ──
+function renderTable() {
+  const tbody      = document.getElementById('sh-tbody');
+  const empty      = document.getElementById('table-empty');
+  const noResults  = document.getElementById('table-no-results');
+  const table      = document.getElementById('sh-table');
+  const addBtn     = document.getElementById('add-row-btn');
+  const filterBar  = document.getElementById('filter-bar');
+  const countEl    = document.getElementById('filter-count');
+
+  tbody.innerHTML = '';
+
+  if (!stakeholders.length) {
+    empty.style.display     = 'block';
+    noResults.style.display = 'none';
+    table.style.display     = 'none';
+    addBtn.style.display    = 'none';
+    filterBar.style.display = 'none';
+    return;
+  }
+
+  // Show filter bar once there are stakeholders
+  filterBar.style.display = 'flex';
+  empty.style.display     = 'none';
+
+  const filtered = getFilteredSorted();
+
+  if (!filtered.length) {
+    noResults.style.display = 'block';
+    table.style.display     = 'none';
+    addBtn.style.display    = 'none';
+    countEl.textContent     = '0 results';
+    return;
+  }
+
+  noResults.style.display = 'none';
+  table.style.display     = 'table';
+  addBtn.style.display    = 'flex';
+  countEl.textContent     = filtered.length < stakeholders.length
+    ? `${filtered.length} of ${stakeholders.length}`
+    : `${stakeholders.length} stakeholder${stakeholders.length !== 1 ? 's' : ''}`;
+
+  filtered.forEach(s => {
+      const initials = (s.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const color    = AVATAR_COLORS[Math.abs(hashStr(s.name || '')) % AVATAR_COLORS.length];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div style="display:flex;align-items:center;">
+            <div class="sh-avatar" style="background:${color}">${initials}</div>
+            <div>
+              <div style="font-weight:500;">${s.name || '—'}</div>
+              ${s.email ? `<div style="font-size:11px;color:var(--text3);">${s.email}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td>${s.title_position || '—'}</td>
+        <td>${s.department || '—'}</td>
+        <td>
+          ${s.classification ? `<span class="badge badge-${s.classification}">${cap(s.classification)}</span>` : '—'}
+          ${s.primary_secondary ? `<span class="badge badge-neutral" style="margin-left:4px;">${cap(s.primary_secondary)}</span>` : ''}
+        </td>
+        <td>${s.influence ? `<span class="badge badge-${s.influence}">${cap(s.influence)}</span>` : '—'}</td>
+        <td>${s.interest  ? `<span class="badge badge-${s.interest}">${cap(s.interest)}</span>`  : '—'}</td>
+        <td>${s.support   ? `<span class="badge badge-${s.support}">${cap(s.support)}</span>`    : '—'}</td>
+        <td>
+          ${s.engagement_strategy ? `<div style="font-size:12px;font-weight:500;">${s.engagement_strategy}</div>` : ''}
+          ${s.comm_method || s.frequency ? `<div style="font-size:11px;color:var(--text3);">${[s.comm_method, s.frequency].filter(Boolean).join(' · ')}</div>` : ''}
+          ${!s.engagement_strategy && !s.comm_method && !s.frequency ? '—' : ''}
+        </td>
+        <td>${s.owner || '—'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="row-btn" onclick="editStakeholder('${s.id}')" title="Edit">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="row-btn danger" onclick="deleteStakeholder('${s.id}')" title="Delete">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  updateMetrics();
+}
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h;
+}
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+// ── METRICS ──
+function updateMetrics() {
+  const total         = stakeholders.length;
+  const highInfluence = stakeholders.filter(s => s.influence === 'high').length;
+  const resistant     = stakeholders.filter(s => s.support === 'resistant').length;
+  const external      = stakeholders.filter(s => s.classification === 'external').length;
+
+  document.getElementById('metric-total').textContent          = total || '—';
+  document.getElementById('metric-high-influence').textContent  = total ? highInfluence : '—';
+  document.getElementById('metric-resistant').textContent       = total ? resistant     : '—';
+  document.getElementById('metric-external').textContent        = total ? external      : '—';
+}
+
+// ── MODAL ──
+function openModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Add Stakeholder';
+  clearModalFields();
+  document.getElementById('sh-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('f-name').focus(), 50);
+}
+
+function editStakeholder(id) {
+  const s = stakeholders.find(x => x.id === id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit Stakeholder';
+  document.getElementById('f-name').value           = s.name             || '';
+  document.getElementById('f-title').value          = s.title_position   || '';
+  document.getElementById('f-dept').value           = s.department       || '';
+  document.getElementById('f-email').value          = s.email            || '';
+  document.getElementById('f-phone').value          = s.phone            || '';
+  document.getElementById('f-classification').value = s.classification   || '';
+  document.getElementById('f-primary').value        = s.primary_secondary|| '';
+  document.getElementById('f-influence').value      = s.influence        || '';
+  document.getElementById('f-interest').value       = s.interest         || '';
+  document.getElementById('f-support').value        = s.support          || '';
+  document.getElementById('f-expectations').value   = s.expectations     || '';
+  document.getElementById('f-comm-method').value    = s.comm_method      || '';
+  document.getElementById('f-frequency').value      = s.frequency        || '';
+  document.getElementById('f-strategy').value       = s.engagement_strategy || '';
+  document.getElementById('f-owner').value          = s.owner            || '';
+  document.getElementById('f-sh-notes').value       = s.notes            || '';
+  document.getElementById('sh-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('f-name').focus(), 50);
+}
+
+function clearModalFields() {
+  ['f-name','f-title','f-dept','f-email','f-phone','f-expectations','f-owner','f-sh-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['f-classification','f-primary','f-influence','f-interest','f-support','f-comm-method','f-frequency','f-strategy'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('sh-modal')) return;
+  document.getElementById('sh-modal').style.display = 'none';
+  editingId = null;
+}
+
+async function saveModal() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); return; }
+
+  const payload = {
+    project_id:          PROJECT_ID,
+    name,
+    title_position:      document.getElementById('f-title').value.trim(),
+    department:          document.getElementById('f-dept').value.trim(),
+    email:               document.getElementById('f-email').value.trim(),
+    phone:               document.getElementById('f-phone').value.trim(),
+    classification:      document.getElementById('f-classification').value,
+    primary_secondary:   document.getElementById('f-primary').value,
+    influence:           document.getElementById('f-influence').value,
+    interest:            document.getElementById('f-interest').value,
+    support:             document.getElementById('f-support').value,
+    expectations:        document.getElementById('f-expectations').value.trim(),
+    comm_method:         document.getElementById('f-comm-method').value,
+    frequency:           document.getElementById('f-frequency').value,
+    engagement_strategy: document.getElementById('f-strategy').value,
+    owner:               document.getElementById('f-owner').value.trim(),
+    notes:               document.getElementById('f-sh-notes').value.trim(),
+  };
+
+  if (editingId) {
+    const { error } = await sb.from('stakeholder_register_entries').update(payload).eq('id', editingId);
+    if (error) { showToast('Save failed', 'error'); return; }
+    const idx = stakeholders.findIndex(s => s.id === editingId);
+    if (idx > -1) stakeholders[idx] = { ...stakeholders[idx], ...payload };
+  } else {
+    const { data, error } = await sb.from('stakeholder_register_entries').insert(payload).select().single();
+    if (error) { showToast('Save failed', 'error'); return; }
+    stakeholders.push(data);
+  }
+
+  renderTable();
+  document.getElementById('sh-modal').style.display = 'none';
+  editingId = null;
+  showToast('Saved');
+  touchRegister();
+}
+
+async function deleteStakeholder(id) {
+  const s = stakeholders.find(x => x.id === id);
+  if (!s) return;
+
+  // Confirm
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:24px;width:280px;box-shadow:0 16px 48px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:16px;">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#1a1a1f;">Remove stakeholder?</div>
+      <div style="font-size:13px;color:#6b6a68;line-height:1.5;"><strong>${s.name}</strong> will be permanently removed.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="del-cancel" style="font-family:'Geist',sans-serif;font-size:12px;padding:7px 16px;border-radius:7px;border:1px solid rgba(0,0,0,0.14);background:transparent;color:#6b6a68;cursor:pointer;">Cancel</button>
+        <button id="del-confirm" style="font-family:'Geist',sans-serif;font-size:12px;font-weight:500;padding:7px 16px;border-radius:7px;border:none;background:#c03030;color:#fff;cursor:pointer;">Remove</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('del-cancel').onclick  = () => overlay.remove();
+  document.getElementById('del-confirm').onclick = async () => {
+    overlay.remove();
+    const { error } = await sb.from('stakeholder_register_entries').delete().eq('id', id);
+    if (error) { showToast('Delete failed', 'error'); return; }
+    stakeholders = stakeholders.filter(x => x.id !== id);
+    renderTable();
+    showToast('Removed');
+    touchRegister();
+  };
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+// ── REGISTER METADATA ──
+async function touchRegister() {
+  const now = new Date().toISOString();
+  document.getElementById('last-edited').textContent = 'just now';
+  await sb.from('stakeholder_registers')
+    .upsert({ id: PROJECT_ID, project_id: PROJECT_ID, updated_at: now }, { onConflict: 'id' });
+}
+
+async function saveRegisterMeta(fields) {
+  const now = new Date().toISOString();
+  document.getElementById('last-edited').textContent = 'just now';
+  await sb.from('stakeholder_registers')
+    .upsert({ id: PROJECT_ID, project_id: PROJECT_ID, ...fields, updated_at: now }, { onConflict: 'id' });
+}
+
+// ── NOTES ──
+function activateNotes() {
+  const display = document.getElementById('f-notes');
+  const input   = document.getElementById('fi-notes');
+  display.style.display = 'none';
+  input.style.display   = 'block';
+  input.focus();
+}
+
+function deactivateNotes() {
+  const display = document.getElementById('f-notes');
+  const input   = document.getElementById('fi-notes');
+  const val = input.value.trim();
+  input.style.display   = 'none';
+  display.style.display = 'block';
+  if (val) {
+    display.textContent  = val;
+    display.style.color      = 'var(--text)';
+    display.style.fontStyle  = 'normal';
+  } else {
+    display.textContent  = 'Add notes about the stakeholder identification process, workshop outcomes, or other context…';
+    display.style.color      = 'var(--text3)';
+    display.style.fontStyle  = 'italic';
+  }
+}
+
+function scheduleNoteSave() {
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(() => {
+    saveRegisterMeta({ notes: document.getElementById('fi-notes').value.trim() });
+  }, 800);
+}
+
+// ── STATUS ──
+function cycleStatus() {
+  statusIdx = (statusIdx + 1) % STATUSES.length;
+  applyStatus();
+  saveRegisterMeta({ status: STATUSES[statusIdx].key });
+}
+
+function applyStatus() {
+  const s    = STATUSES[statusIdx];
+  const chip = document.getElementById('doc-status-chip');
+  chip.className = 'status-chip ' + s.cls;
+  chip.innerHTML = `<span class="status-chip-dot"></span>${s.label}`;
+}
+
+// ── APPROVER ──
+function toggleApproverPopout() {
+  const popout = document.getElementById('approver-popout');
+  if (popout.style.display === 'block') {
+    closeApproverPopout();
+  } else {
+    const cur = document.getElementById('approver-name').textContent;
+    document.getElementById('approver-input').value = cur === 'None' ? '' : cur;
+    popout.style.display = 'block';
+    setTimeout(() => document.getElementById('approver-input').focus(), 50);
+  }
+}
+
+function closeApproverPopout() {
+  document.getElementById('approver-popout').style.display = 'none';
+}
+
+async function saveApprover() {
+  const name = document.getElementById('approver-input').value.trim();
+  document.getElementById('approver-name').textContent = name || 'None';
+  document.getElementById('approver-name').style.color = name ? 'var(--text)' : 'var(--text2)';
+  closeApproverPopout();
+  await saveRegisterMeta({ approver: name || null });
+  showToast('Approver updated');
+}
+
+async function clearApprover() {
+  document.getElementById('approver-input').value = '';
+  document.getElementById('approver-name').textContent = 'None';
+  document.getElementById('approver-name').style.color = 'var(--text2)';
+  closeApproverPopout();
+  await saveRegisterMeta({ approver: null });
+}
+
+// ── POPULATE FROM DOCUMENT ──
+let extractedStakeholders = [];
+
+function openImportModal() {
+  document.getElementById('import-text').value = '';
+  document.getElementById('import-status').style.display = 'none';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-extract-btn').style.display = 'inline-flex';
+  document.getElementById('import-save-btn').style.display = 'none';
+  extractedStakeholders = [];
+  document.getElementById('import-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('import-text').focus(), 50);
+}
+
+function closeImportModal(e) {
+  if (e && e.target !== document.getElementById('import-modal')) return;
+  document.getElementById('import-modal').style.display = 'none';
+}
+
+async function runExtraction() {
+  const statusEl = document.getElementById('import-status');
+  statusEl.style.display = 'flex';
+  document.getElementById('import-spinner').style.display = 'none';
+  document.getElementById('import-status-text').textContent = 'AI extraction coming soon — this feature is not yet connected.';
+  document.getElementById('import-extract-btn').style.display = 'none';
+}
+
+async function saveImported() {
+  if (!extractedStakeholders.length) return;
+  const rows = extractedStakeholders.map(s => ({ ...s, project_id: PROJECT_ID }));
+  const { data, error } = await sb.from('stakeholder_register_entries').insert(rows).select();
+  if (error) { showToast('Save failed', 'error'); return; }
+  stakeholders.push(...data);
+  renderTable();
+  document.getElementById('import-modal').style.display = 'none';
+  showToast(`${data.length} stakeholder${data.length !== 1 ? 's' : ''} added`);
+  touchRegister();
+}
+
+function exportDoc() {
+  alert('Export to PDF — connect your PDF generation service here.');
+}
+
+// ── BACK TO GRAPH ──
+function confirmBackToGraph() {
+  document.getElementById('back-modal').style.display = 'flex';
+}
+function discardAndLeave() {
+  document.getElementById('back-modal').style.display = 'none';
+  window.location.href = 'index.html';
+}
+function saveAndLeave() {
+  document.getElementById('back-modal').style.display = 'none';
+  window.location.href = 'index.html';
+}
+
+// ── DISMISS APPROVER ON OUTSIDE CLICK ──
+document.addEventListener('mousedown', e => {
+  const wrap = document.getElementById('approver-wrap');
+  if (wrap && !wrap.contains(e.target)) closeApproverPopout();
+});
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('sh-modal').style.display     = 'none';
+    document.getElementById('back-modal').style.display   = 'none';
+    document.getElementById('import-modal').style.display = 'none';
+    closeApproverPopout();
+  }
+});
+
+// ── EXPOSE ──
+Object.assign(window, {
+  openModal, closeModal, saveModal, editStakeholder, deleteStakeholder,
+  cycleStatus, confirmBackToGraph, discardAndLeave, saveAndLeave,
+  toggleApproverPopout, closeApproverPopout, saveApprover, clearApprover,
+  activateNotes, deactivateNotes, scheduleNoteSave, exportDoc,
+  openImportModal, closeImportModal, runExtraction, saveImported,
+  sortBy, applyFilters, clearFilters,
+});
+
+// ── BOOT ──
+loadAll();
+</script>
+</body>
+</html>
