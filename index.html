@@ -1233,10 +1233,12 @@ function restoreFromData(data, bcPrefetched) {
     nodes.push(n);
     const ph = PHASES[n.phaseIdx];
     const isBC = n.title === 'Business Case';
+    const isSR = n.title === 'Stakeholder Register';
     const el = document.createElement('div');
     el.className = 'node'; el.id = 'node-' + n.id;
     el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
     if (isBC) el.style.borderColor = 'rgba(90,79,207,0.35)';
+    if (isSR) el.style.borderColor = 'rgba(90,79,207,0.35)';
     el.innerHTML = `
       <div class="node-top" style="background:${ph.color}"></div>
       <div class="node-body">
@@ -1249,6 +1251,11 @@ function restoreFromData(data, bcPrefetched) {
       <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openBusinessCase()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         Open Business Case
+      </button>` : ''}
+      ${isSR ? `
+      <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openStakeholderRegister()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Stakeholder Register
       </button>` : ''}
       <div class="node-footer">
         <div style="display:flex;gap:4px;margin-left:auto">
@@ -1344,15 +1351,18 @@ async function loadGraph() {
   } catch(e) {}
 
   // ── STEP 2: Fetch from Supabase in background ──
-  const [graphRes, bcRes, projectRes, ...tableRes] = await Promise.all([
+  const [graphRes, bcRes, projectRes, srRegRes, srEntriesRes, ...tableRes] = await Promise.all([
     sb.from('graph_states').select('*').eq('id', GRAPH_ID).maybeSingle(),
     sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')+',status').eq('id', BC_ID).maybeSingle(),
     sb.from('projects').select('title, goal, start_date, end_date').eq('id', BC_ID).maybeSingle(),
+    sb.from('stakeholder_registers').select('status').eq('id', BC_ID).maybeSingle(),
+    sb.from('stakeholder_register_entries').select('id').eq('project_id', BC_ID).limit(1),
     ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
   ]);
 
   const data = graphRes.data;
   const bcPrefetched = { bcRes, tableRes };
+  const srPrefetched = { srRegRes, srEntriesRes };
 
   // ── STEP 3: First ever load — no cache, no DB row ──
   if (!data) {
@@ -1381,6 +1391,7 @@ async function loadGraph() {
     // Cache was up to date — just update the BC status silently
     refreshBCNode(bcPrefetched);
   }
+  refreshSRNode(srPrefetched);
 
   // Apply project details from projects table (always, regardless of cache state)
   if (projectRes.data) {
@@ -1427,6 +1438,10 @@ async function loadProjectDetails() {
 
 function openBusinessCase() {
   window.location.href = 'business-case.html?id=' + BC_ID;
+}
+
+function openStakeholderRegister() {
+  window.location.href = 'stakeholder-register.html?id=' + BC_ID;
 }
 
 // ── PHASE POPOUT MENU ──
@@ -1868,72 +1883,93 @@ function init() {
   const startNodeY = rowY + (145 - 72) / 2;
   const sid = addProjectStart(startNodeX, startNodeY);
 
-  const defaultNodes = [
+  // ── Linear chain nodes (before the parallel section) ──
+  const preNodes = [
     { phaseIdx: 0, nodeName: 'Project Goal' },
+  ];
+
+  // ── Parallel nodes (BC + SR side by side) ──
+  const parallelNodes = [
     { phaseIdx: 0, nodeName: 'Business Case' },
+    { phaseIdx: 0, nodeName: 'Stakeholder Register' },
+  ];
+
+  // ── Linear chain nodes (after parallel section) ──
+  const postNodes = [
     { phaseIdx: 1, nodeName: 'Scope Document' },
     { phaseIdx: 2, nodeName: 'Sprint Initiation' },
     { phaseIdx: 3, nodeName: 'Success Criteria' },
   ];
 
+  // Build pre-parallel linear items
   const items = [];
-  defaultNodes.forEach((n, i) => {
+  preNodes.forEach((n, i) => {
     items.push({ type: 'node', phaseIdx: n.phaseIdx, nodeName: n.nodeName });
-    const nextNode = defaultNodes[i + 1];
-    // Only add a gate when transitioning to a different phase
+  });
+
+  // Add a gate after pre-nodes (Project Initiation exit gate before parallel)
+  // We'll wire connections manually, so just collect node ids
+  const preIds   = preNodes.map(n => addNode(n.phaseIdx, 0, 0, true, n.nodeName));
+  const bcId     = addNode(parallelNodes[0].phaseIdx, 0, 0, true, parallelNodes[0].nodeName);
+  const srId     = addNode(parallelNodes[1].phaseIdx, 0, 0, true, parallelNodes[1].nodeName);
+
+  // Exit gate (between parallel block and post nodes)
+  const gid = ++gateCounter;
+  const gate = { id: gid, x: 0, y: 0, approved: false, label: 'Project Initiation Exit Gate', color: '#555450', showDivider: false };
+  gates.push(gate);
+  const gateEl = document.createElement('div');
+  gateEl.className = 'gate'; gateEl.id = 'gate-' + gid;
+  gateEl.style.left = '0px'; gateEl.style.top = '0px';
+  gateEl.innerHTML = `
+    <div class="gate-label">Project Initiation<br>Exit Gate</div>
+    <div class="gate-icon" id="gate-icon-${gid}">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>
+      </svg>
+    </div>
+    <div class="port port-right" data-gate-id="${gid}" data-side="right"></div>
+    <div class="port port-left"  data-gate-id="${gid}" data-side="left"></div>
+  `;
+  canvas.appendChild(gateEl);
+  setupGateEvents(gateEl, gid);
+
+  // Post-parallel nodes (with phase gates between them)
+  const postIds = [];
+  const postGateIds = [];
+  postNodes.forEach((n, i) => {
+    const nid = addNode(n.phaseIdx, 0, 0, true, n.nodeName);
+    postIds.push(nid);
+    const nextNode = postNodes[i + 1];
     if (nextNode && nextNode.phaseIdx !== n.phaseIdx) {
-      items.push({ type: 'gate', exitPhaseIdx: n.phaseIdx });
-    }
-  });
-
-  let curX = startX;
-  items.forEach(item => {
-    item.x = curX; item.y = rowY;
-    curX += item.type === 'gate' ? gateSize + (gapX - gateSize) : gapX;
-  });
-
-  const placed = [];
-  items.forEach(item => {
-    if (item.type === 'node') {
-      const id = addNode(item.phaseIdx, item.x, item.y, true, item.nodeName);
-      placed.push({ type: 'node', id, key: id });
-    } else {
-      const gid = ++gateCounter;
-      const gateY = rowY + (145 - gateSize) / 2;
-      const exitPhaseName = PHASES[item.exitPhaseIdx].name;
-      const labelText = exitPhaseName + ' Exit Gate';
-      const labelHTML = `${exitPhaseName}<br>Exit Gate`;
-      const gate = { id: gid, x: item.x, y: gateY, approved: false, label: labelText };
-      gates.push(gate);
-      const el = document.createElement('div');
-      el.className = 'gate'; el.id = 'gate-' + gid;
-      el.style.left = item.x + 'px'; el.style.top = gateY + 'px';
-      el.innerHTML = `
-        <div class="gate-label">${labelHTML}</div>
-        <div class="gate-icon" id="gate-icon-${gid}">
+      const pgid = ++gateCounter;
+      const exitPhaseName = PHASES[n.phaseIdx].name;
+      const pg = { id: pgid, x: 0, y: 0, approved: false, label: exitPhaseName + ' Exit Gate', color: '#555450', showDivider: false };
+      gates.push(pg);
+      const pgEl = document.createElement('div');
+      pgEl.className = 'gate'; pgEl.id = 'gate-' + pgid;
+      pgEl.style.left = '0px'; pgEl.style.top = '0px';
+      pgEl.innerHTML = `
+        <div class="gate-label">${exitPhaseName}<br>Exit Gate</div>
+        <div class="gate-icon" id="gate-icon-${pgid}">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/>
           </svg>
         </div>
-        <div class="port port-right" data-gate-id="${gid}" data-side="right"></div>
-        <div class="port port-left"  data-gate-id="${gid}" data-side="left"></div>
+        <div class="port port-right" data-gate-id="${pgid}" data-side="right"></div>
+        <div class="port port-left"  data-gate-id="${pgid}" data-side="left"></div>
       `;
-      canvas.appendChild(el);
-      setupGateEvents(el, gid);
-      placed.push({ type: 'gate', id: gid, key: 'g' + gid });
+      canvas.appendChild(pgEl);
+      setupGateEvents(pgEl, pgid);
+      postGateIds.push({ afterIdx: i, gid: pgid });
     }
   });
 
-  placed.unshift({ type: 'start', id: sid, key: 's' + sid });
-
-  const lastItem = items[items.length - 1];
-  const endX = lastItem.x + (lastItem.type === 'gate' ? 64 : 180) + (240 - 72) / 2 + 40;
-  const endY = rowY + (145 - 72) / 2;
+  // Project End
   const eid = ++projectEndCounter;
-  projectEnds.push({ id: eid, x: endX, y: endY, completed: false });
+  projectEnds.push({ id: eid, x: 0, y: 0, completed: false });
   const endEl = document.createElement('div');
   endEl.className = 'project-end'; endEl.id = 'end-' + eid;
-  endEl.style.left = endX + 'px'; endEl.style.top = endY + 'px';
+  endEl.style.left = '0px'; endEl.style.top = '0px';
   endEl.innerHTML = `
     <div class="project-end-label">Project End</div>
     <div class="project-end-icon" id="end-icon-${eid}">
@@ -1943,13 +1979,43 @@ function init() {
   `;
   canvas.appendChild(endEl);
   setupProjectEndEvents(endEl, eid);
-  placed.push({ type: 'end', id: eid, key: 'e' + eid });
 
   setTimeout(() => {
-    for (let i = 0; i < placed.length - 1; i++) addConnection(placed[i].key, placed[i + 1].key);
+    // Start → Project Goal
+    addConnection('s' + sid, preIds[0]);
+
+    // Project Goal → BC and SR (parallel)
+    addConnection(preIds[0], bcId);
+    addConnection(preIds[0], srId);
+
+    // BC and SR → Exit Gate
+    addConnection(bcId,  'g' + gid);
+    addConnection(srId,  'g' + gid);
+
+    // Exit Gate → first post node
+    addConnection('g' + gid, postIds[0]);
+
+    // Post nodes chain with gates
+    let postChain = [postIds[0]];
+    postGateIds.forEach(pg => {
+      postChain.push('g' + pg.gid);
+      postChain.push(postIds[pg.afterIdx + 1]);
+    });
+    // Fill remaining postIds not already added
+    postIds.forEach((nid, i) => {
+      if (!postChain.includes(nid)) postChain.push(nid);
+    });
+    for (let i = 0; i < postChain.length - 1; i++) {
+      addConnection(postChain[i], postChain[i + 1]);
+    }
+
+    // Last post node → Project End
+    addConnection(postChain[postChain.length - 1], 'e' + eid);
+
     updateStatus();
     autoLayout();
     refreshBCNode(null);
+    refreshSRNode(null);
   }, 50);
 }
 
@@ -1993,6 +2059,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   nodes.push(node);
 
   const isBC = nodeName === 'Business Case';
+  const isSR = nodeName === 'Stakeholder Register';
 
   const el = document.createElement('div');
   el.className = 'node';
@@ -2000,8 +2067,8 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   el.style.left = x + 'px';
   el.style.top = y + 'px';
 
-  // Business Case node gets a special accent border
   if (isBC) el.style.borderColor = 'rgba(90,79,207,0.35)';
+  if (isSR) el.style.borderColor = 'rgba(90,79,207,0.35)';
 
   el.innerHTML = `
     <div class="node-top" style="background:${ph.color}"></div>
@@ -2017,6 +2084,11 @@ function addNode(phaseIdx, x, y, silent, forceName) {
     <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openBusinessCase()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Open Business Case
+    </button>` : ''}
+    ${isSR ? `
+    <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openStakeholderRegister()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Stakeholder Register
     </button>` : ''}
     <div class="node-footer">
       <div style="display:flex;gap:4px;margin-left:auto">
@@ -2124,12 +2196,76 @@ async function refreshBCNode(prefetched) {
   scheduleSave();
 }
 
+async function refreshSRNode(prefetched) {
+  const srNode = nodes.find(n => n.title === 'Stakeholder Register');
+  if (!srNode) return;
+
+  const prevComplete = predecessorsComplete(srNode.id);
+
+  let pct = 0, status = 'draft', hasEntries = false;
+
+  try {
+    if (prefetched) {
+      status     = prefetched.srRegRes?.data?.status || 'draft';
+      hasEntries = (prefetched.srEntriesRes?.data?.length || 0) > 0;
+    } else {
+      const [regRes, entriesRes] = await Promise.all([
+        sb.from('stakeholder_registers').select('status').eq('id', BC_ID).maybeSingle(),
+        sb.from('stakeholder_register_entries').select('id').eq('project_id', BC_ID).limit(1),
+      ]);
+      status     = regRes.data?.status || 'draft';
+      hasEntries = (entriesRes.data?.length || 0) > 0;
+    }
+  } catch(e) {}
+
+  let newStatus;
+  if (status === 'approved') {
+    newStatus = 'complete';
+  } else if (status === 'review') {
+    newStatus = 'waiting_approval';
+  } else if (!prevComplete) {
+    newStatus = 'waiting';
+  } else if (!hasEntries) {
+    newStatus = 'not_started';
+  } else {
+    newStatus = 'in_progress';
+  }
+
+  srNode.srStatus  = newStatus;
+  srNode.progress  = newStatus === 'complete' ? 100 : 0;
+  renderProgress(srNode.id);
+  scheduleSave();
+}
+
 function renderProgress(id) {
   const node = nodes.find(n => n.id === id);
   if (!node) return;
   const ph = PHASES[node.phaseIdx];
   const container = document.getElementById('progress-' + id);
   if (!container) return;
+
+  // Stakeholder Register node — status-driven, no percentage bar
+  if (node.title === 'Stakeholder Register') {
+    const s = node.srStatus;
+    if (s === 'waiting' || s === undefined) {
+      container.innerHTML = `<div class="node-progress-waiting">Waiting</div>`;
+    } else if (s === 'not_started') {
+      container.innerHTML = `<div class="node-progress-waiting" style="color:var(--text2)">Not Started</div>`;
+    } else if (s === 'in_progress') {
+      container.innerHTML = `<div class="node-progress-waiting" style="color:${ph.color};font-weight:500;">In Progress</div>`;
+    } else if (s === 'waiting_approval') {
+      container.innerHTML = `
+        <div class="node-progress-header">
+          <span class="node-progress-label" style="color:#8c5a25">Waiting Approval</span>
+        </div>
+        <div class="node-progress-track">
+          <div class="node-progress-fill" style="width:100%; background:#c4854a"></div>
+        </div>`;
+    } else if (s === 'complete') {
+      container.innerHTML = `<div class="node-progress-done">✓ Complete</div>`;
+    }
+    return;
+  }
 
   // Business Case node uses its own status-driven display
   if (node.title === 'Business Case') {
@@ -2202,6 +2338,7 @@ function setProgress(id, value) {
   scheduleSave();
   // A progress change on any node may unblock the BC node
   refreshBCNode();
+  refreshSRNode(null);
 }
 
 // ── NODE EVENTS ──
@@ -3091,14 +3228,14 @@ function updateCanvasTop() {
 
 // ── EXPOSE TO INLINE onclick HANDLERS (ES module scope) ──
 Object.assign(window, {
-  openBusinessCase, openPhaseMenu, pickNode, pickCustomNode,
+  openBusinessCase, openStakeholderRegister, openPhaseMenu, pickNode, pickCustomNode,
   saveOtherNodeModal, closeOtherNodeModal, saveCustomNodeModal, closeCustomNodeModal,
   openGateMenu, addGate, addCustomGate, approveGate, deleteGate,
   setProgress, autoLayout, zoom,
   openEditModal, saveEditModal, closeEditModal,
   openStartEditModal, saveStartEditModal, closeStartEditModal,
   ctxDuplicate, ctxDelete, initiateProject, completeProjectEnd,
-  showDuplicateConfirm, dismissArrowMenu, refreshBCNode,
+  showDuplicateConfirm, dismissArrowMenu, refreshBCNode, refreshSRNode,
   saveCustomGateModal, closeCustomGateModal, initGateColorSwatches,
 });
 
