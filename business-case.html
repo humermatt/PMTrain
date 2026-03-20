@@ -1179,14 +1179,27 @@ function showToast(msg, type = 'saved') {
 
 // ── LOAD ALL DATA FROM SUPABASE ──
 async function loadAll() {
-  // Ensure a business_case row exists
-  const { data: bc, error: bcErr } = await sb
-    .from('business_cases')
-    .upsert({ id: BC_ID }, { onConflict: 'id', ignoreDuplicates: true })
-    .select()
-    .single();
+  // Fetch business case row and project details in parallel
+  const [bcUpsert, projectRes] = await Promise.all([
+    sb.from('business_cases')
+      .upsert({ id: BC_ID }, { onConflict: 'id', ignoreDuplicates: true })
+      .select().single(),
+    sb.from('projects')
+      .select('title, goal')
+      .eq('id', BC_ID)
+      .maybeSingle(),
+  ]);
 
-  // Fetch the row
+  // Populate topbar from projects table
+  if (projectRes.data) {
+    const p = projectRes.data;
+    const titleEl = document.querySelector('.topbar-project-title');
+    const goalEl  = document.getElementById('topbar-goal');
+    if (titleEl && p.title) titleEl.textContent = p.title;
+    if (goalEl  && p.goal)  goalEl.textContent  = p.goal;
+  }
+
+  // Fetch the business case row
   const { data: row } = await sb
     .from('business_cases')
     .select('*')
