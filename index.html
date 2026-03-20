@@ -1344,9 +1344,10 @@ async function loadGraph() {
   } catch(e) {}
 
   // ── STEP 2: Fetch from Supabase in background ──
-  const [graphRes, bcRes, ...tableRes] = await Promise.all([
+  const [graphRes, bcRes, projectRes, ...tableRes] = await Promise.all([
     sb.from('graph_states').select('*').eq('id', GRAPH_ID).maybeSingle(),
     sb.from('business_cases').select(BC_TEXT_FIELDS.join(',')+',status').eq('id', BC_ID).maybeSingle(),
+    sb.from('projects').select('title, goal, start_date, end_date').eq('id', BC_ID).maybeSingle(),
     ...BC_TABLE_FIELDS.map(t => sb.from(t).select('id').eq('business_case_id', BC_ID).limit(1)),
   ]);
 
@@ -1379,6 +1380,48 @@ async function loadGraph() {
   } else {
     // Cache was up to date — just update the BC status silently
     refreshBCNode(bcPrefetched);
+  }
+
+  // Apply project details from projects table (always, regardless of cache state)
+  if (projectRes.data) {
+    const p = projectRes.data;
+    applyProjectDetails(p.title, p.goal);
+    const st = projectStarts[0];
+    if (st) {
+      st.projectTitle = p.title      || '';
+      st.projectGoal  = p.goal       || '';
+      st.startDate    = p.start_date || '';
+      st.endDate      = p.end_date   || '';
+    }
+  }
+}
+
+// ── PROJECT DETAILS ──
+function applyProjectDetails(title, goal) {
+  const titleEl = document.getElementById('topbar-project-title');
+  const goalEl  = document.getElementById('topbar-goal');
+  if (titleEl && title) titleEl.textContent = title;
+  if (goalEl  && goal)  goalEl.textContent  = goal;
+}
+
+async function loadProjectDetails() {
+  const { data, error } = await sb
+    .from('projects')
+    .select('title, goal, start_date, end_date')
+    .eq('id', BC_ID)
+    .maybeSingle();
+  if (error || !data) return;
+
+  // Populate topbar
+  applyProjectDetails(data.title, data.goal);
+
+  // Store on the start node so the edit modal pre-fills correctly
+  const st = projectStarts[0];
+  if (st) {
+    st.projectTitle = data.title  || '';
+    st.projectGoal  = data.goal   || '';
+    st.startDate    = data.start_date || '';
+    st.endDate      = data.end_date   || '';
   }
 }
 
@@ -2985,19 +3028,29 @@ function openStartEditModal(id) {
   setTimeout(() => document.getElementById('startEditProjectTitle').focus(), 50);
 }
 
-function saveStartEditModal() {
+async function saveStartEditModal() {
   const st = projectStarts.find(s => s.id === editingStartId);
   if (!st) return;
   st.projectTitle = document.getElementById('startEditProjectTitle').value.trim();
   st.projectGoal  = document.getElementById('startEditProjectGoal').value.trim();
   st.startDate    = document.getElementById('startEditStartDate').value;
   st.endDate      = document.getElementById('startEditEndDate').value;
-  const titleEl = document.getElementById('topbar-project-title');
-  if (titleEl && st.projectTitle) titleEl.textContent = st.projectTitle;
-  const goalEl = document.getElementById('topbar-goal');
-  if (goalEl && st.projectGoal) goalEl.textContent = st.projectGoal;
+
+  // Update topbar immediately
+  applyProjectDetails(st.projectTitle, st.projectGoal);
+
   closeStartEditModal();
   scheduleSave();
+
+  // Persist to projects table
+  const { error } = await sb.from('projects').update({
+    title:      st.projectTitle || null,
+    goal:       st.projectGoal  || null,
+    start_date: st.startDate    || null,
+    end_date:   st.endDate      || null,
+    updated_at: new Date().toISOString(),
+  }).eq('id', BC_ID);
+  if (error) console.error('Project save failed:', JSON.stringify(error));
 }
 
 function closeStartEditModal(e) {
