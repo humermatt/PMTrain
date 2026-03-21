@@ -707,6 +707,58 @@
   }
   .modal-create:hover { background: #2e2e38; }
   .modal-create:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── PEOPLE TABLE ── */
+  .people-table { width: 100%; border-collapse: collapse; }
+  .people-table thead tr { background: var(--bg3); }
+  .people-table th {
+    font-size: 9px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+    padding: 10px 20px; text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .people-table td {
+    padding: 12px 20px; font-size: 12px;
+    color: var(--text); border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .people-table tr:last-child td { border-bottom: none; }
+  .people-table tbody tr { transition: background 0.1s; }
+  .people-table tbody tr:hover { background: var(--bg); }
+  .person-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff;
+    flex-shrink: 0; margin-right: 10px;
+  }
+  .team-tag {
+    display: inline-flex; align-items: center;
+    font-size: 10px; padding: 2px 8px; border-radius: 20px;
+    background: rgba(90,79,207,0.1); color: #534ab7;
+    border: 1px solid rgba(90,79,207,0.2);
+    margin: 2px 3px 2px 0; white-space: nowrap;
+  }
+  /* ── PERSON MODAL ── */
+  .person-modal {
+    background: var(--bg2); border-radius: 14px;
+    padding: 24px; width: 480px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+    animation: modal-up 0.2s cubic-bezier(0.34,1.4,0.64,1);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .person-modal-header { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+  .person-field { display:flex; flex-direction:column; gap:5px; }
+  .person-field label { font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--text3); }
+  .person-field input { font-family:'Geist',sans-serif; font-size:13px; color:var(--text); background:var(--bg3); border:1px solid var(--border2); border-radius:7px; padding:8px 10px; outline:none; transition:border-color 0.15s; }
+  .person-field input:focus { border-color:rgba(0,0,0,0.25); }
+  .tags-input-wrap { display:flex; flex-wrap:wrap; gap:6px; background:var(--bg3); border:1px solid var(--border2); border-radius:7px; padding:6px 10px; min-height:38px; align-items:center; cursor:text; transition:border-color 0.15s; }
+  .tags-input-wrap:focus-within { border-color:rgba(0,0,0,0.25); }
+  .tag-pill { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(90,79,207,0.12); color:#534ab7; border:1px solid rgba(90,79,207,0.2); }
+  .tag-pill button { background:none; border:none; cursor:pointer; color:#534ab7; font-size:13px; padding:0; line-height:1; opacity:0.7; }
+  .tag-pill button:hover { opacity:1; }
+  .tags-input { border:none; background:transparent; outline:none; font-family:'Geist',sans-serif; font-size:12px; color:var(--text); flex:1; min-width:80px; }
+  .person-modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -723,6 +775,10 @@
     <button class="nav-item active" onclick="showView('projects')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Projects
+    </button>
+    <button class="nav-item" onclick="showView('people')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      People
     </button>
     <div class="sidebar-nav-label">Account</div>
     <button class="nav-item" onclick="showView('settings')">
@@ -872,7 +928,87 @@
     </div>
   </div>
 
+  <!-- PEOPLE VIEW -->
+  <div id="view-people" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+    <div class="main-header">
+      <div class="main-header-row">
+        <div>
+          <div class="main-header-title">People</div>
+          <div class="main-header-sub">Global directory — people available across all projects.</div>
+        </div>
+        <button class="btn-new-project" onclick="openPersonModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Person
+        </button>
+      </div>
+    </div>
+    <div class="projects-scroll">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+        <!-- Search bar -->
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+          <div style="position:relative;flex:1;max-width:320px;">
+            <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);pointer-events:none;" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="people-search" type="text" placeholder="Search by name, role, team…" oninput="renderPeople()" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px 7px 30px;outline:none;width:100%;transition:border-color 0.15s;" onfocus="this.style.borderColor='rgba(0,0,0,0.25)'" onblur="this.style.borderColor='var(--border2)'" />
+          </div>
+          <span id="people-count" style="font-size:11px;color:var(--text3);margin-left:auto;"></span>
+        </div>
+        <!-- Table -->
+        <div id="people-empty" style="padding:60px 20px;text-align:center;font-size:13px;color:var(--text3);font-style:italic;">No people added yet. Click <strong>Add Person</strong> to build your directory.</div>
+        <table id="people-table" class="people-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Teams</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="people-tbody"></tbody>
+        </table>
+        <button id="people-add-row" style="display:none;width:100%;font-family:'Geist',sans-serif;font-size:12px;color:var(--text3);background:none;border:none;border-top:1px dashed var(--border2);padding:12px 20px;cursor:pointer;text-align:left;display:none;gap:6px;align-items:center;transition:all 0.15s;" onclick="openPersonModal()" onmouseenter="this.style.color='var(--text2)';this.style.background='var(--bg)'" onmouseleave="this.style.color='var(--text3)';this.style.background='none'">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add person
+        </button>
+      </div>
+    </div>
+  </div>
+
 </main>
+
+<!-- PERSON MODAL -->
+<div class="modal-overlay" id="person-modal" style="display:none;" onclick="if(event.target===this)closePersonModal()">
+  <div class="person-modal" onclick="event.stopPropagation()">
+    <div class="person-modal-header" id="person-modal-title">Add Person</div>
+    <div class="person-field">
+      <label>Full Name</label>
+      <input type="text" id="p-name" placeholder="e.g. Sarah Mitchell" />
+    </div>
+    <div class="person-field">
+      <label>Role</label>
+      <input type="text" id="p-role" placeholder="e.g. Project Manager" />
+    </div>
+    <div class="person-field">
+      <label>Email</label>
+      <input type="email" id="p-email" placeholder="name@company.com" />
+    </div>
+    <div class="person-field">
+      <label>Phone</label>
+      <input type="text" id="p-phone" placeholder="+1 555 000 0000" />
+    </div>
+    <div class="person-field">
+      <label>Teams</label>
+      <div class="tags-input-wrap" id="teams-wrap" onclick="document.getElementById('teams-input').focus()">
+        <input type="text" class="tags-input" id="teams-input" placeholder="Type a team and press Enter…" onkeydown="handleTeamInput(event)" />
+      </div>
+    </div>
+    <div class="person-modal-actions">
+      <button class="modal-cancel" onclick="closePersonModal()">Cancel</button>
+      <button class="modal-create" onclick="savePerson()">Save Person</button>
+    </div>
+  </div>
+</div>
 
 <!-- NEW PROJECT MODAL -->
 <div class="modal-overlay" id="new-project-modal" style="display:none;" onclick="if(event.target===this)closeNewProjectModal()">
@@ -1138,16 +1274,6 @@ function setFilter(filter, btn) {
   renderProjects();
 }
 
-// ── NAV ──
-function showView(view) {
-  document.getElementById('view-projects').style.display  = view === 'projects'  ? 'flex' : 'none';
-  document.getElementById('view-settings').style.display  = view === 'settings'  ? 'flex' : 'none';
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el => {
-    if (el.textContent.trim().toLowerCase().startsWith(view)) el.classList.add('active');
-  });
-}
-
 // ── NEW PROJECT MODAL ──
 function openNewProjectModal() {
   selectedTemplate = null;
@@ -1254,10 +1380,216 @@ function saveProfile() {
   showToast('Profile saved');
 }
 
+// ── PEOPLE ──
+let people = [];
+let editingPersonId = null;
+let currentTags = [];
+
+const AVATAR_COLORS_P = ['#7c6fcd','#5a9e7a','#4a8bc4','#c4854a','#c03030','#3a9ebf','#c45a8a'];
+function hashStr(s) { let h=0; for(let i=0;i<s.length;i++) h=(Math.imul(31,h)+s.charCodeAt(i))|0; return h; }
+
+async function loadPeople() {
+  const { data } = await sb.from('people').select('*').order('name');
+  people = data || [];
+  renderPeople();
+}
+
+function renderPeople() {
+  const tbody  = document.getElementById('people-tbody');
+  const empty  = document.getElementById('people-empty');
+  const table  = document.getElementById('people-table');
+  const addBtn = document.getElementById('people-add-row');
+  const count  = document.getElementById('people-count');
+  const search = (document.getElementById('people-search')?.value || '').toLowerCase();
+
+  const filtered = people.filter(p =>
+    !search || [p.name,p.role,p.email,(p.teams||[]).join(' ')].some(v => (v||'').toLowerCase().includes(search))
+  );
+
+  count.textContent = filtered.length < people.length
+    ? `${filtered.length} of ${people.length}`
+    : `${people.length} person${people.length !== 1 ? 's' : ''}`;
+
+  if (!people.length) {
+    empty.style.display = 'block'; table.style.display = 'none'; addBtn.style.display = 'none'; return;
+  }
+  if (!filtered.length) {
+    empty.style.display = 'block'; empty.textContent = 'No people match your search.';
+    table.style.display = 'none'; addBtn.style.display = 'none'; return;
+  }
+
+  empty.style.display = 'none'; table.style.display = 'table'; addBtn.style.display = 'flex';
+  tbody.innerHTML = '';
+
+  filtered.forEach(p => {
+    const initials = (p.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const color    = AVATAR_COLORS_P[Math.abs(hashStr(p.name||'')) % AVATAR_COLORS_P.length];
+    const teams    = (p.teams || []).map(t => `<span class="team-tag">${t}</span>`).join('') || '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div style="display:flex;align-items:center;">
+        <div class="person-avatar" style="background:${color}">${initials}</div>
+        <span style="font-weight:500;">${p.name||'—'}</span>
+      </div></td>
+      <td>${p.role||'—'}</td>
+      <td style="color:var(--text2)">${p.email||'—'}</td>
+      <td style="color:var(--text2)">${p.phone||'—'}</td>
+      <td>${teams}</td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:flex-end;">
+          <button class="card-menu-btn" onclick="editPerson('${p.id}')" title="Edit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="card-menu-btn" onclick="confirmDeletePerson('${p.id}','${(p.name||'').replace(/'/g,"\\'")}') " title="Delete" style="color:var(--text3);" onmouseenter="this.style.color='#c03030'" onmouseleave="this.style.color='var(--text3)'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function openPersonModal() {
+  editingPersonId = null;
+  currentTags = [];
+  document.getElementById('person-modal-title').textContent = 'Add Person';
+  document.getElementById('p-name').value  = '';
+  document.getElementById('p-role').value  = '';
+  document.getElementById('p-email').value = '';
+  document.getElementById('p-phone').value = '';
+  document.getElementById('teams-input').value = '';
+  renderTagPills();
+  document.getElementById('person-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('p-name').focus(), 50);
+}
+
+function editPerson(id) {
+  const p = people.find(x => x.id === id);
+  if (!p) return;
+  editingPersonId = id;
+  currentTags = [...(p.teams || [])];
+  document.getElementById('person-modal-title').textContent = 'Edit Person';
+  document.getElementById('p-name').value  = p.name  || '';
+  document.getElementById('p-role').value  = p.role  || '';
+  document.getElementById('p-email').value = p.email || '';
+  document.getElementById('p-phone').value = p.phone || '';
+  document.getElementById('teams-input').value = '';
+  renderTagPills();
+  document.getElementById('person-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('p-name').focus(), 50);
+}
+
+function closePersonModal() {
+  document.getElementById('person-modal').style.display = 'none';
+  editingPersonId = null; currentTags = [];
+}
+
+function renderTagPills() {
+  const wrap  = document.getElementById('teams-wrap');
+  const input = document.getElementById('teams-input');
+  wrap.querySelectorAll('.tag-pill').forEach(el => el.remove());
+  currentTags.forEach((tag, i) => {
+    const pill = document.createElement('span');
+    pill.className = 'tag-pill';
+    pill.innerHTML = `${tag}<button type="button" onclick="removeTag(${i})">×</button>`;
+    wrap.insertBefore(pill, input);
+  });
+}
+
+function removeTag(i) {
+  currentTags.splice(i, 1);
+  renderTagPills();
+}
+
+function handleTeamInput(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/, '');
+    if (val && !currentTags.includes(val)) {
+      currentTags.push(val);
+      renderTagPills();
+    }
+    e.target.value = '';
+  } else if (e.key === 'Backspace' && e.target.value === '' && currentTags.length) {
+    currentTags.pop();
+    renderTagPills();
+  }
+}
+
+async function savePerson() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { document.getElementById('p-name').focus(); return; }
+
+  // Flush any unsubmitted tag input
+  const tagInput = document.getElementById('teams-input').value.trim();
+  if (tagInput && !currentTags.includes(tagInput)) currentTags.push(tagInput);
+
+  const payload = {
+    name,
+    role:  document.getElementById('p-role').value.trim()  || null,
+    email: document.getElementById('p-email').value.trim() || null,
+    phone: document.getElementById('p-phone').value.trim() || null,
+    teams: currentTags.length ? currentTags : null,
+  };
+
+  if (editingPersonId) {
+    const { error } = await sb.from('people').update(payload).eq('id', editingPersonId);
+    if (error) { showToast('Save failed', 'error'); return; }
+    const idx = people.findIndex(p => p.id === editingPersonId);
+    if (idx > -1) people[idx] = { ...people[idx], ...payload };
+  } else {
+    const { data, error } = await sb.from('people').insert(payload).select().single();
+    if (error) { showToast('Save failed', 'error'); return; }
+    people.push(data);
+  }
+
+  closePersonModal();
+  renderPeople();
+  showToast('Saved');
+}
+
+function confirmDeletePerson(id, name) {
+  const overlay = document.createElement('div');
+  overlay.id = 'delete-person-overlay';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);animation:fade-in 0.15s ease;`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:28px;width:340px;box-shadow:0 24px 80px rgba(0,0,0,0.2);animation:modal-up 0.2s cubic-bezier(0.34,1.4,0.64,1);">
+      <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#1a1a1f;margin-bottom:12px;">Remove person?</div>
+      <p style="font-size:13px;color:#6b6a68;line-height:1.65;margin-bottom:24px;"><strong style="color:#1a1a1f;">${name}</strong> will be removed from the directory.</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="document.getElementById('delete-person-overlay').remove()" style="font-family:'Geist',sans-serif;font-size:13px;padding:9px 18px;border-radius:9px;border:1px solid rgba(0,0,0,0.14);background:transparent;color:#6b6a68;cursor:pointer;" onmouseenter="this.style.background='#f0f0f2'" onmouseleave="this.style.background='transparent'">Cancel</button>
+        <button onclick="deletePerson('${id}')" style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;border:none;background:#c03030;color:#fff;cursor:pointer;" onmouseenter="this.style.background='#a82828'" onmouseleave="this.style.background='#c03030'">Remove</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function deletePerson(id) {
+  document.getElementById('delete-person-overlay')?.remove();
+  const { error } = await sb.from('people').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  people = people.filter(p => p.id !== id);
+  renderPeople();
+  showToast('Person removed');
+}
+
+// ── NAV — update showView to handle people ──
+function showView(view) {
+  document.getElementById('view-projects').style.display = view === 'projects' ? 'flex' : 'none';
+  document.getElementById('view-settings').style.display = view === 'settings' ? 'flex' : 'none';
+  document.getElementById('view-people').style.display   = view === 'people'   ? 'flex' : 'none';
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.textContent.trim().toLowerCase().startsWith(view));
+  });
+  if (view === 'people' && people.length === 0) loadPeople();
+}
+
 // ── KEYBOARD ──
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeNewProjectModal();
+    closePersonModal();
     document.getElementById('filter-dropdown').style.display = 'none';
   }
 });
@@ -1278,6 +1610,8 @@ Object.assign(window, {
   showView, openNewProjectModal, closeNewProjectModal,
   createProject, setFilter, openGraph, openStats, saveProfile, updateSidebarPreview,
   toggleFilterDropdown, toggleCardMenu, confirmDeleteProject, deleteProject, dismissCardMenus,
+  openPersonModal, closePersonModal, savePerson, editPerson, confirmDeletePerson, deletePerson,
+  handleTeamInput, removeTag, renderPeople,
 });
 
 // ── BOOT ──
