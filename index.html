@@ -888,9 +888,8 @@
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <a href="landing.html" style="display:flex;align-items:center;gap:5px;font-family:'Geist',sans-serif;font-size:11px;color:var(--text3);text-decoration:none;padding:5px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s;flex-shrink:0;" onmouseenter="this.style.background='var(--bg3)';this.style.borderColor='var(--border2)';this.style.color='var(--text2)';" onmouseleave="this.style.background='transparent';this.style.borderColor='transparent';this.style.color='var(--text3)';">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    All Projects
+  <a href="landing.html" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:var(--text3);text-decoration:none;transition:all 0.15s;flex-shrink:0;" onmouseenter="this.style.background='var(--bg3)';this.style.color='var(--text2)';" onmouseleave="this.style.background='transparent';this.style.color='var(--text3)';" title="All Projects">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
   </a>
   <div class="topbar-sep"></div>
   <span class="topbar-title">PM.Train</span>
@@ -1239,11 +1238,11 @@ function restoreFromData(data, bcPrefetched) {
     const ph = PHASES[n.phaseIdx];
     const isBC = n.title === 'Business Case';
     const isSR = n.title === 'Stakeholder Register';
+    const isPS = n.title === 'Problem Statement';
     const el = document.createElement('div');
     el.className = 'node'; el.id = 'node-' + n.id;
     el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
-    if (isBC) el.style.borderColor = 'rgba(90,79,207,0.35)';
-    if (isSR) el.style.borderColor = 'rgba(90,79,207,0.35)';
+    if (isBC || isSR || isPS) el.style.borderColor = 'rgba(90,79,207,0.35)';
     el.innerHTML = `
       <div class="node-top" style="background:${ph.color}"></div>
       <div class="node-body">
@@ -1261,6 +1260,11 @@ function restoreFromData(data, bcPrefetched) {
       <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openStakeholderRegister()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         Open Stakeholder Register
+      </button>` : ''}
+      ${isPS ? `
+      <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openProblemStatement()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Problem Statement
       </button>` : ''}
       <div class="node-footer">
         <div style="display:flex;gap:4px;margin-left:auto">
@@ -1449,6 +1453,10 @@ function openStakeholderRegister() {
   window.location.href = 'stakeholder-register.html?id=' + BC_ID;
 }
 
+function openProblemStatement() {
+  window.location.href = 'Problem-Statement.html?id=' + BC_ID;
+}
+
 // ── PHASE POPOUT MENU ──
 const phasePopout = document.getElementById('phasePopout');
 let popoutOpen = false;
@@ -1614,8 +1622,8 @@ function closePhaseMenu() {
 // ── STATE ──
 const PHASES = [
   { name: 'Project Initiation', color: '#7c6fcd', light: 'rgba(124,111,205,0.15)', label: 'Phase 01',
-    nodes: ['Project Charter','Project Goal','Business Case','Stakeholder Register','Project Initiation Document (PID)','Scope Statement'],
-    descs: { 'Project Charter': 'Formal document authorising the project', 'Project Goal': 'Define objectives & success criteria', 'Business Case': 'Justification for the project including costs and benefits', 'Stakeholder Register': 'Identify and document all project stakeholders', 'Project Initiation Document (PID)': 'Comprehensive document defining project scope, approach and responsibilities', 'Scope Statement': 'Defines the boundaries and deliverables of the project' } },
+    nodes: ['Project Charter','Project Goal','Problem Statement','Business Case','Stakeholder Register','Project Initiation Document (PID)','Scope Statement'],
+    descs: { 'Project Charter': 'Formal document authorising the project', 'Project Goal': 'Define objectives & success criteria', 'Problem Statement': 'Clearly articulates the problem or opportunity driving the project', 'Business Case': 'Justification for the project including costs and benefits', 'Stakeholder Register': 'Identify and document all project stakeholders', 'Project Initiation Document (PID)': 'Comprehensive document defining project scope, approach and responsibilities', 'Scope Statement': 'Defines the boundaries and deliverables of the project' } },
   { name: 'Project Planning',   color: '#c4854a', light: 'rgba(196,133,74,0.15)',   label: 'Phase 02',
     nodes: ['Scope Document','Project Management Plan','Resourcing Document','Project Scope Management','Work Breakdown Structure (WBS)','Project Schedule Development','Resource Planning','Budget Planning','Risk Management Plan','Communication Plan','Quality & Procurement Planning','Approval and Baselining'],
     descs: { 'Scope Document': 'Define deliverables & boundaries', 'Project Management Plan': 'Integrated plan covering all knowledge areas', 'Resourcing Document': 'Team roles, skills & availability', 'Project Scope Management': '', 'Work Breakdown Structure (WBS)': '', 'Project Schedule Development': '', 'Resource Planning': '', 'Budget Planning': '', 'Risk Management Plan': '', 'Communication Plan': '', 'Quality & Procurement Planning': '', 'Approval and Baselining': '' } },
@@ -2065,6 +2073,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
 
   const isBC = nodeName === 'Business Case';
   const isSR = nodeName === 'Stakeholder Register';
+  const isPS = nodeName === 'Problem Statement';
 
   const el = document.createElement('div');
   el.className = 'node';
@@ -2072,8 +2081,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   el.style.left = x + 'px';
   el.style.top = y + 'px';
 
-  if (isBC) el.style.borderColor = 'rgba(90,79,207,0.35)';
-  if (isSR) el.style.borderColor = 'rgba(90,79,207,0.35)';
+  if (isBC || isSR || isPS) el.style.borderColor = 'rgba(90,79,207,0.35)';
 
   el.innerHTML = `
     <div class="node-top" style="background:${ph.color}"></div>
@@ -2094,6 +2102,11 @@ function addNode(phaseIdx, x, y, silent, forceName) {
     <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openStakeholderRegister()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Open Stakeholder Register
+    </button>` : ''}
+    ${isPS ? `
+    <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openProblemStatement()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Problem Statement
     </button>` : ''}
     <div class="node-footer">
       <div style="display:flex;gap:4px;margin-left:auto">
@@ -3233,7 +3246,7 @@ function updateCanvasTop() {
 
 // ── EXPOSE TO INLINE onclick HANDLERS (ES module scope) ──
 Object.assign(window, {
-  openBusinessCase, openStakeholderRegister, openPhaseMenu, pickNode, pickCustomNode,
+  openBusinessCase, openStakeholderRegister, openProblemStatement, openPhaseMenu, pickNode, pickCustomNode,
   saveOtherNodeModal, closeOtherNodeModal, saveCustomNodeModal, closeCustomNodeModal,
   openGateMenu, addGate, addCustomGate, approveGate, deleteGate,
   setProgress, autoLayout, zoom,
