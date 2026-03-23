@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM.Train — Problem Statement</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #ededef;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.11);
+    --text: #1a1a1f;
+    --text2: #6b6a68;
+    --text3: #a0a09e;
+    --accent: #5a4fcf;
+    --c1: #7c6fcd; --c1l: rgba(124,111,205,0.15);
+    --c2: #5a9e7a; --c2l: rgba(90,158,122,0.15);
+    --c3: #4a8bc4; --c3l: rgba(74,139,196,0.15);
+    --c4: #c4854a; --c4l: rgba(196,133,74,0.15);
+    --c5: #c03030; --c5l: rgba(192,48,48,0.10);
+    --radius: 10px;
+  }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BARS ── */
+  .topbar {
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .subbar {
+    min-height: 40px;
+    max-height: 80px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 99;
+  }
+  .topbar-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text3); letter-spacing:-0.2px; }
+  .topbar-sep { width:1px; height:20px; background:var(--border2); }
+  .topbar-project-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--text); letter-spacing:-0.5px; }
+  .topbar-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .subbar-actions { margin-left:auto; display:flex; gap:8px; }
+  .topbar-goal {
+    font-family:'Syne',sans-serif; font-size:11px; font-weight:700; font-style:italic;
+    color:var(--accent); opacity:0.8; flex:1;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; line-height:1.5;
+  }
+  .btn { font-family:'Geist',sans-serif; font-size:12px; padding:6px 14px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .btn:hover { background:var(--bg3); color:var(--text); }
+  .btn-primary { background:#1a1a1f; color:#fff; border-color:transparent; font-weight:500; }
+  .btn-primary:hover { background:#2e2e38; }
+  .btn-empty { font-family:'Geist',sans-serif; font-size:12px; padding:10px 18px; border-radius:6px; border:1px solid rgba(0,0,0,0.18); background:rgba(0,0,0,0.06); color:var(--text3); cursor:pointer; transition:all 0.15s; }
+  .btn-empty:hover { background:rgba(0,0,0,0.11); color:var(--text2); }
+
+  /* ── PAGE BODY ── */
+  .page-body { flex:1; overflow-y:auto; padding:32px 40px 60px; }
+  .page-body::-webkit-scrollbar { width:6px; }
+  .page-body::-webkit-scrollbar-track { background:transparent; }
+  .page-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; gap:20px; }
+  .page-header-eyebrow { font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .page-header-title { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:var(--text); letter-spacing:-0.5px; }
+  .page-header-subtitle { font-size:13px; color:var(--text3); margin-top:6px; line-height:1.5; }
+  .page-header-actions { display:flex; flex-direction:column; gap:2px; flex-shrink:0; align-items:flex-end; }
+
+  /* ── STATEMENT BUILDER ── */
+  .statement-banner {
+    background: var(--c1l);
+    border: 1px solid rgba(124,111,205,0.25);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .statement-banner-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c1);
+    margin-bottom: 2px;
+  }
+  .statement-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.65;
+    letter-spacing: -0.2px;
+  }
+  .statement-text em {
+    font-style: normal;
+    color: var(--c1);
+    border-bottom: 1.5px solid rgba(124,111,205,0.3);
+  }
+  .statement-empty {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    color: var(--text3);
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* ── SECTION CARDS ── */
+  .section-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .section-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-color-bar { width:3px; height:20px; border-radius:2px; flex-shrink:0; }
+  .section-header-text { flex:1; }
+  .section-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text); }
+  .section-subtitle { font-size:11px; color:var(--text3); margin-top:2px; line-height:1.4; }
+  .section-body { padding:16px 20px; }
+
+  /* ── EDITABLE FIELDS ── */
+  .field-display {
+    font-size:13px; color:var(--text3); font-style:italic;
+    min-height:52px; padding:10px 12px; border-radius:7px;
+    border:1px solid transparent; cursor:text; line-height:1.65;
+    transition:all 0.15s; white-space:pre-wrap;
+  }
+  .field-display:hover { background:var(--bg); border-color:var(--border2); }
+  .field-display.has-content { color:var(--text); font-style:normal; }
+  .field-textarea {
+    display:none; width:100%; font-family:'Geist',sans-serif; font-size:13px;
+    color:var(--text); background:var(--bg3); border:1px solid rgba(0,0,0,0.18);
+    border-radius:7px; padding:10px 12px; outline:none; resize:none; line-height:1.65;
+    transition:border-color 0.15s;
+  }
+  .field-textarea:focus { border-color:rgba(0,0,0,0.25); }
+
+  /* ── TWO-COL GRID ── */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  @media (max-width: 800px) { .two-col { grid-template-columns:1fr; } }
+
+  /* ── TARGET DATE ── */
+  .date-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .date-field {
+    font-family:'Geist',sans-serif; font-size:13px; color:var(--text);
+    background:var(--bg3); border:1px solid var(--border2); border-radius:7px;
+    padding:8px 12px; outline:none; transition:border-color 0.15s; cursor:pointer;
+  }
+  .date-field:focus { border-color:rgba(0,0,0,0.25); }
+  .date-label { font-size:12px; color:var(--text3); }
+
+  /* ── DO / DON'T ── */
+  .guidance-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:800px) { .guidance-grid { grid-template-columns:1fr; } }
+  .guidance-col { display:flex; flex-direction:column; gap:6px; }
+  .guidance-heading { font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+  .guidance-item {
+    display:flex; align-items:flex-start; gap:8px;
+    font-size:12px; color:var(--text2); line-height:1.5;
+  }
+  .guidance-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+
+  /* ── STATUS CHIP ── */
+  .status-chip { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; padding:4px 10px; border-radius:20px; border:1px solid; }
+  .status-chip-dot { width:6px; height:6px; border-radius:50%; }
+  .status-draft    { background:var(--bg3); color:var(--text3); border-color:var(--border2); }
+  .status-draft .status-chip-dot { background:var(--text3); }
+  .status-review   { background:var(--c4l); color:#8c5a25; border-color:rgba(196,133,74,0.3); }
+  .status-review .status-chip-dot { background:var(--c4); }
+  .status-approved { background:var(--c2l); color:#2c7d52; border-color:rgba(90,158,122,0.3); }
+  .status-approved .status-chip-dot { background:var(--c2); }
+
+  /* ── APPROVER ── */
+  #approver-wrap { position:relative; }
+
+  /* ── GATHERING TABLE ── */
+  .sh-table { width:100%; border-collapse:collapse; }
+  .sh-table thead tr { background:var(--bg3); }
+  .sh-table th { font-size:9px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); padding:10px 16px; text-align:left; border-bottom:1px solid var(--border2); }
+  .sh-table td { padding:10px 16px; font-size:12px; color:var(--text); border-bottom:1px solid var(--border); vertical-align:top; }
+  .sh-table tr:last-child td { border-bottom:none; }
+  .sh-table tbody tr:hover { background:var(--bg); }
+  .gathering-select { font-family:'Geist',sans-serif; font-size:12px; color:var(--text); background:transparent; border:none; outline:none; cursor:pointer; padding:0; width:100%; }
+  .gathering-summary { font-family:'Geist',sans-serif; font-size:12px; color:var(--text); background:transparent; border:none; outline:none; resize:none; width:100%; line-height:1.6; padding:0; min-height:20px; }
+  .gathering-summary::placeholder { color:var(--text3); font-style:italic; }
+  .row-del-btn { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; cursor:pointer; color:var(--text3); border-radius:5px; transition:all 0.12s; }
+  .row-del-btn:hover { background:rgba(200,48,48,0.08); color:#c03030; }
+
+  /* ── BACK MODAL ── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.25); z-index:400; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+  .modal { background:#fff; border-radius:14px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.16); display:flex; flex-direction:column; gap:16px; }
+  .modal-header { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+  .modal-actions { display:flex; gap:8px; justify-content:space-between; margin-top:4px; }
+  .modal-cancel { font-family:'Geist',sans-serif; font-size:12px; padding:7px 16px; border-radius:7px; border:1px solid var(--border2); background:transparent; color:var(--text2); cursor:pointer; }
+  .modal-cancel:hover { background:var(--bg3); }
+  .modal-save { font-family:'Geist',sans-serif; font-size:12px; font-weight:500; padding:7px 16px; border-radius:7px; border:none; background:#1a1a1f; color:#fff; cursor:pointer; }
+  .modal-save:hover { background:#2e2e38; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-title">PM.Train</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-project-title" id="topbar-project-title">Project New Technology</span>
+  <div class="topbar-actions">
+    <span id="doc-status-chip" class="status-chip status-draft">
+      <span class="status-chip-dot"></span>Draft
+    </span>
+    <button class="btn" onclick="cycleStatus()">Change Status</button>
+    <button class="btn btn-primary" onclick="exportDoc()">Export PDF</button>
+  </div>
+</div>
+
+<!-- SUB BAR -->
+<div class="subbar">
+  <div class="topbar-goal" id="topbar-goal">The goal of this project is to get projects back on the rails.</div>
+  <div class="subbar-actions">
+    <button class="btn-empty" onclick="confirmBackToGraph()">← Back to Graph</button>
+  </div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-header-eyebrow">Project Initiation</div>
+      <div class="page-header-title">Problem Statement</div>
+      <div class="page-header-subtitle">Clearly articulate the problem, its impact, and the desired future state to align and inspire your team.</div>
+    </div>
+    <div class="page-header-actions">
+      <span style="font-size:11px;color:var(--text3);">Last edited <strong id="last-edited" style="color:var(--text2);">—</strong></span>
+      <div id="approver-wrap">
+        <div id="approver-display" onclick="toggleApproverPopout()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s;" onmouseenter="this.style.background='var(--bg3)';this.style.borderColor='var(--border2)';" onmouseleave="this.style.background='transparent';this.style.borderColor='transparent';">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Approver: <strong id="approver-name" style="color:var(--text2);">None</strong>
+        </div>
+        <div id="approver-popout" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border2);border-radius:10px;padding:14px;width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.13);z-index:200;">
+          <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">Assign Approver</div>
+          <input id="approver-input" type="text" placeholder="Enter approver name…" style="font-family:'Geist',sans-serif;font-size:13px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;outline:none;width:100%;" onkeydown="if(event.key==='Enter') saveApprover(); if(event.key==='Escape') closeApproverPopout();" />
+          <div style="display:flex;gap:6px;margin-top:12px;justify-content:flex-end;">
+            <button onclick="clearApprover()" style="font-family:'Geist',sans-serif;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;">Clear</button>
+            <button onclick="saveApprover()" style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;background:#1a1a1f;color:#fff;cursor:pointer;">Assign</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compiled Statement Banner -->
+  <div class="statement-banner">
+    <div class="statement-banner-label">Compiled Problem Statement</div>
+    <div id="compiled-statement" class="statement-empty">
+      Fill in the fields below and your problem statement will compile here automatically.
+    </div>
+  </div>
+
+  <!-- Current State + Desired Future State -->
+  <div class="two-col">
+
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-color-bar" style="background:var(--c5)"></div>
+        <div class="section-header-text">
+          <div class="section-title">Current State</div>
+          <div class="section-subtitle">Describe the existing problem with measurable indicators — quality, cost, time, satisfaction.</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="d-current" class="field-display" onclick="activateField('current')">Describe the current situation in measurable terms…</div>
+        <textarea id="f-current" class="field-textarea" rows="5" onblur="deactivateField('current')" oninput="scheduleSave()"></textarea>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-color-bar" style="background:var(--c2)"></div>
+        <div class="section-header-text">
+          <div class="section-title">Desired Future State</div>
+          <div class="section-subtitle">Contrast with a clear vision of success — defined by measurable targets from customer needs or strategy.</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="d-future" class="field-display" onclick="activateField('future')">Describe what success looks like in measurable terms…</div>
+        <textarea id="f-future" class="field-textarea" rows="5" onblur="deactivateField('future')" oninput="scheduleSave()"></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Impact / Consequences -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-color-bar" style="background:var(--c4)"></div>
+      <div class="section-header-text">
+        <div class="section-title">Impact & Consequences</div>
+        <div class="section-subtitle">The negative effect of the problem on customers or business — lost time, revenue, satisfaction, safety.</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div id="d-impact" class="field-display" onclick="activateField('impact')">Describe the business or customer impact if this problem is not addressed…</div>
+      <textarea id="f-impact" class="field-textarea" rows="4" onblur="deactivateField('impact')" oninput="scheduleSave()"></textarea>
+    </div>
+  </div>
+
+  <!-- Problem Scope & Context -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-color-bar" style="background:var(--c3)"></div>
+      <div class="section-header-text">
+        <div class="section-title">Problem Scope & Context</div>
+        <div class="section-subtitle">Who is affected, where, and when. Avoid presupposing causes or suggesting solutions at this stage.</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div id="d-scope" class="field-display" onclick="activateField('scope')">Describe who is affected, locations or products involved, when the problem was first observed, and how often it occurs…</div>
+      <textarea id="f-scope" class="field-textarea" rows="4" onblur="deactivateField('scope')" oninput="scheduleSave()"></textarea>
+    </div>
+  </div>
+
+  <!-- Target Date -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-color-bar" style="background:var(--c1)"></div>
+      <div class="section-header-text">
+        <div class="section-title">Target Date</div>
+        <div class="section-subtitle">The specific date by which the future state will be achieved — creates urgency and accountability.</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="date-row">
+        <span class="date-label">We aim to achieve the desired future state by</span>
+        <input type="date" id="f-target-date" class="date-field" onchange="scheduleSave()" />
+        <span id="target-date-relative" style="font-size:12px;color:var(--text3);"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Information Gathering Table -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-color-bar" style="background:var(--text3)"></div>
+      <div class="section-header-text">
+        <div class="section-title">Information Gathering</div>
+        <div class="section-subtitle">Methods used to gather data and deepen understanding of the problem.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span id="gathering-count" style="font-size:11px;color:var(--text3);"></span>
+        <div style="position:relative;">
+          <button id="gathering-filter-btn" onclick="toggleGatheringFilter()" class="btn" style="display:flex;align-items:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            <span id="gathering-filter-label">Filter</span>
+          </button>
+          <div id="gathering-filter-popout" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:18px;width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.13);z-index:200;">
+            <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px;">Filter entries</div>
+
+            <div style="margin-bottom:14px;">
+              <div style="font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Method</div>
+              <select id="filter-method" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;outline:none;width:100%;cursor:pointer;">
+                <option value="">All methods</option>
+              </select>
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <div style="font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Date range</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input type="date" id="filter-date-from" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:6px 8px;outline:none;flex:1;" placeholder="From" />
+                <span style="font-size:11px;color:var(--text3);">to</span>
+                <input type="date" id="filter-date-to" style="font-family:'Geist',sans-serif;font-size:12px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:6px 8px;outline:none;flex:1;" placeholder="To" />
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:12px;">
+              <button onclick="clearGatheringFilter()" style="font-family:'Geist',sans-serif;font-size:11px;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;">Clear</button>
+              <button onclick="applyGatheringFilter()" style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;padding:6px 14px;border-radius:6px;border:none;background:#1a1a1f;color:#fff;cursor:pointer;">Apply</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addGatheringRow()" style="flex-shrink:0;">+ Add Row</button>
+      </div>
+    </div>
+    <div id="gathering-table-wrap">
+      <div id="gathering-empty" style="padding:36px 20px;text-align:center;font-size:13px;color:var(--text3);font-style:italic;">No information gathering entries yet. Click <strong>+ Add Row</strong> to get started.</div>
+      <div id="gathering-no-results" style="display:none;padding:36px 20px;text-align:center;font-size:13px;color:var(--text3);font-style:italic;">No entries match the current filter.</div>
+      <table id="gathering-table" class="sh-table" style="display:none;">
+        <thead>
+          <tr>
+            <th style="width:200px;">Method</th>
+            <th style="width:130px;">Date</th>
+            <th>Summary</th>
+            <th style="width:40px;"></th>
+          </tr>
+        </thead>
+        <tbody id="gathering-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page-body -->
+
+<!-- BACK TO GRAPH MODAL -->
+<div class="modal-overlay" id="back-modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="width:340px;" onclick="event.stopPropagation()">
+    <div class="modal-header">Return to Graph?</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-top:-4px;">Any unsaved changes will be lost.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('back-modal').style.display='none'">Stay here</button>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-cancel" style="color:#c03030;border-color:rgba(192,48,48,0.25);" onclick="window.location.href='index.html'">Discard</button>
+        <button class="modal-save" onclick="saveAndLeave()">Save &amp; Return</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const params = new URLSearchParams(window.location.search);
+const PROJECT_ID = params.get('id') || '00000000-0000-0000-0000-000000000001';
+
+// ── STATE ──
+let statusIdx = 0;
+let saveTimer = null;
+
+const STATUSES = [
+  { key: 'draft',    label: 'Draft',      cls: 'status-draft'    },
+  { key: 'review',   label: 'In Review',  cls: 'status-review'   },
+  { key: 'approved', label: 'Approved',   cls: 'status-approved' },
+];
+
+const GATHERING_METHODS = [
+  'Stakeholder Interviews', 'Data Analysis & Review', 'Market Research',
+  'Job Shadowing', 'Surveys & Questionnaires', 'Focus Groups',
+  'Process Mapping', 'Historical Data Examination', 'SOPs & Guidelines',
+  'Other',
+];
+
+// ── INFORMATION GATHERING TABLE ──
+let gatheringRows = []; // [{ method, date, summary }]
+let gatheringFilter = { method: '', dateFrom: '', dateTo: '' };
+let gatheringFilterActive = false;
+
+function getFilteredGathering() {
+  return gatheringRows.filter((row, i) => {
+    if (gatheringFilter.method && row.method !== gatheringFilter.method) return false;
+    if (gatheringFilter.dateFrom && row.date && row.date < gatheringFilter.dateFrom) return false;
+    if (gatheringFilter.dateTo   && row.date && row.date > gatheringFilter.dateTo)   return false;
+    return true;
+  });
+}
+
+function renderGatheringTable() {
+  const tbody    = document.getElementById('gathering-tbody');
+  const empty    = document.getElementById('gathering-empty');
+  const noRes    = document.getElementById('gathering-no-results');
+  const table    = document.getElementById('gathering-table');
+  const countEl  = document.getElementById('gathering-count');
+  tbody.innerHTML = '';
+
+  if (!gatheringRows.length) {
+    empty.style.display = 'block'; noRes.style.display = 'none';
+    table.style.display = 'none'; countEl.textContent = ''; return;
+  }
+
+  const filtered = getFilteredGathering();
+  countEl.textContent = filtered.length < gatheringRows.length
+    ? `${filtered.length} of ${gatheringRows.length}`
+    : `${gatheringRows.length} entr${gatheringRows.length !== 1 ? 'ies' : 'y'}`;
+
+  if (!filtered.length) {
+    empty.style.display = 'none'; noRes.style.display = 'block';
+    table.style.display = 'none'; return;
+  }
+
+  empty.style.display = 'none'; noRes.style.display = 'none'; table.style.display = 'table';
+
+  // Build a map of filtered index → original index for edits/deletes
+  filtered.forEach(row => {
+    const i = gatheringRows.indexOf(row);
+    const methodOptions = GATHERING_METHODS.map(m =>
+      `<option value="${m}" ${row.method === m ? 'selected' : ''}>${m}</option>`
+    ).join('');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <select class="gathering-select" onchange="updateGatheringRow(${i},'method',this.value)">
+          <option value="">— Select method —</option>
+          ${methodOptions}
+        </select>
+      </td>
+      <td>
+        <input type="date" class="date-field" style="font-size:12px;padding:5px 8px;width:100%;background:transparent;border:none;outline:none;cursor:pointer;" value="${row.date || ''}" onchange="updateGatheringRow(${i},'date',this.value)" />
+      </td>
+      <td>
+        <textarea class="gathering-summary" rows="2" placeholder="Summarise findings or approach…" onchange="updateGatheringRow(${i},'summary',this.value)" oninput="autoResizeTextarea(this)">${row.summary || ''}</textarea>
+      </td>
+      <td>
+        <button class="row-del-btn" onclick="deleteGatheringRow(${i})" title="Remove">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function addGatheringRow() {
+  gatheringRows.push({ method: '', date: '', summary: '' });
+  renderGatheringTable();
+  scheduleSave();
+  const rows = document.getElementById('gathering-tbody').querySelectorAll('tr');
+  const lastSelect = rows[rows.length - 1]?.querySelector('select');
+  if (lastSelect) lastSelect.focus();
+}
+
+function updateGatheringRow(idx, field, value) {
+  gatheringRows[idx][field] = value;
+  scheduleSave();
+}
+
+function deleteGatheringRow(idx) {
+  gatheringRows.splice(idx, 1);
+  renderGatheringTable();
+  scheduleSave();
+}
+
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+// ── GATHERING FILTER ──
+function toggleGatheringFilter() {
+  const popout = document.getElementById('gathering-filter-popout');
+  if (popout.style.display === 'block') { popout.style.display = 'none'; return; }
+  // Populate method dropdown with methods actually in use
+  const select = document.getElementById('filter-method');
+  const usedMethods = [...new Set(gatheringRows.map(r => r.method).filter(Boolean))];
+  select.innerHTML = '<option value="">All methods</option>' +
+    usedMethods.map(m => `<option value="${m}" ${gatheringFilter.method === m ? 'selected' : ''}>${m}</option>`).join('');
+  document.getElementById('filter-date-from').value = gatheringFilter.dateFrom;
+  document.getElementById('filter-date-to').value   = gatheringFilter.dateTo;
+  popout.style.display = 'block';
+}
+
+function applyGatheringFilter() {
+  gatheringFilter.method   = document.getElementById('filter-method').value;
+  gatheringFilter.dateFrom = document.getElementById('filter-date-from').value;
+  gatheringFilter.dateTo   = document.getElementById('filter-date-to').value;
+  gatheringFilterActive    = !!(gatheringFilter.method || gatheringFilter.dateFrom || gatheringFilter.dateTo);
+  document.getElementById('gathering-filter-popout').style.display = 'none';
+  // Update filter button label
+  const btn = document.getElementById('gathering-filter-label');
+  btn.textContent = gatheringFilterActive ? 'Filtered' : 'Filter';
+  document.getElementById('gathering-filter-btn').style.borderColor = gatheringFilterActive ? 'var(--accent)' : '';
+  document.getElementById('gathering-filter-btn').style.color       = gatheringFilterActive ? 'var(--accent)' : '';
+  renderGatheringTable();
+}
+
+function clearGatheringFilter() {
+  gatheringFilter = { method: '', dateFrom: '', dateTo: '' };
+  gatheringFilterActive = false;
+  document.getElementById('filter-method').value    = '';
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value   = '';
+  document.getElementById('gathering-filter-label').textContent = 'Filter';
+  document.getElementById('gathering-filter-btn').style.borderColor = '';
+  document.getElementById('gathering-filter-btn').style.color       = '';
+  document.getElementById('gathering-filter-popout').style.display = 'none';
+  renderGatheringTable();
+}
+
+const FIELDS = ['current', 'future', 'impact', 'scope', 'gathering'];
+
+// ── TOAST ──
+function showToast(msg, type = 'ok') {
+  let t = document.getElementById('ps-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'ps-toast';
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:12px;font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = type === 'error' ? '#c03030' : '#1a1a1f';
+  t.style.color = '#fff'; t.style.opacity = '1';
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = '0', 2200);
+}
+
+// ── LOAD ──
+async function loadAll() {
+  const [psRes, projRes] = await Promise.all([
+    sb.from('problem_statements').select('*').eq('id', PROJECT_ID).maybeSingle(),
+    sb.from('projects').select('title, goal').eq('id', PROJECT_ID).maybeSingle(),
+  ]);
+
+  // Project details
+  if (projRes.data) {
+    if (projRes.data.title) document.getElementById('topbar-project-title').textContent = projRes.data.title;
+    if (projRes.data.goal)  document.getElementById('topbar-goal').textContent = projRes.data.goal;
+  }
+
+  if (!psRes.data) return;
+  const r = psRes.data;
+
+  // Restore fields
+  FIELDS.forEach(key => {
+    if (r[key]) {
+      const display  = document.getElementById('d-' + key);
+      const textarea = document.getElementById('f-' + key);
+      textarea.value = r[key];
+      display.textContent = r[key];
+      display.classList.add('has-content');
+    }
+  });
+
+  // Target date
+  if (r.target_date) {
+    document.getElementById('f-target-date').value = r.target_date;
+    updateDateRelative();
+  }
+
+  // Status
+  if (r.status) {
+    const idx = STATUSES.findIndex(s => s.key === r.status);
+    if (idx > -1) { statusIdx = idx; applyStatus(); }
+  }
+
+  // Approver
+  if (r.approver) {
+    document.getElementById('approver-name').textContent = r.approver;
+    document.getElementById('approver-name').style.color = 'var(--text)';
+  }
+
+  // Gathering rows
+  if (r.gathering_rows) {
+    try { gatheringRows = JSON.parse(r.gathering_rows); } catch(e) { gatheringRows = []; }
+    renderGatheringTable();
+  }
+
+  // Updated at
+  if (r.updated_at) {
+    const d = new Date(r.updated_at);
+    document.getElementById('last-edited').textContent = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+  }
+
+  updateCompiledStatement();
+}
+
+// ── SAVE ──
+function scheduleSave() {
+  updateCompiledStatement();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveAll, 800);
+}
+
+async function saveAll() {
+  const payload = {
+    project_id:       PROJECT_ID,
+    status:           STATUSES[statusIdx].key,
+    current:          document.getElementById('f-current').value.trim() || null,
+    future:           document.getElementById('f-future').value.trim()  || null,
+    impact:           document.getElementById('f-impact').value.trim()  || null,
+    scope:            document.getElementById('f-scope').value.trim()   || null,
+    target_date:      document.getElementById('f-target-date').value    || null,
+    gathering_rows:   gatheringRows.length ? JSON.stringify(gatheringRows) : null,
+    updated_at:       new Date().toISOString(),
+  };
+  const { error } = await sb.from('problem_statements')
+    .upsert({ id: PROJECT_ID, ...payload }, { onConflict: 'id' });
+  if (error) { showToast('Save failed', 'error'); return; }
+  document.getElementById('last-edited').textContent = 'just now';
+}
+
+// ── COMPILED STATEMENT ──
+function updateCompiledStatement() {
+  const current = document.getElementById('f-current').value.trim();
+  const future  = document.getElementById('f-future').value.trim();
+  const date    = document.getElementById('f-target-date').value;
+  const el      = document.getElementById('compiled-statement');
+
+  if (!current && !future) {
+    el.className = 'statement-empty';
+    el.innerHTML = 'Fill in the fields below and your problem statement will compile here automatically.';
+    return;
+  }
+
+  const dateStr = date
+    ? new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
+    : '[target date not set]';
+
+  const currentPart = current || '[current state not described]';
+  const futurePart  = future  || '[future state not described]';
+
+  el.className = 'statement-text';
+  el.innerHTML = `Currently, <em>${currentPart}</em>, compared to our target of <em>${futurePart}</em>, which we aim to achieve by <em>${dateStr}</em>.`;
+}
+
+// ── FIELD ACTIVATION ──
+function activateField(key) {
+  const display  = document.getElementById('d-' + key);
+  const textarea = document.getElementById('f-' + key);
+  display.style.display  = 'none';
+  textarea.style.display = 'block';
+  textarea.focus();
+  // Auto-size
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.max(80, textarea.scrollHeight) + 'px';
+}
+
+function deactivateField(key) {
+  const display  = document.getElementById('d-' + key);
+  const textarea = document.getElementById('f-' + key);
+  const val = textarea.value.trim();
+  textarea.style.display = 'none';
+  display.style.display  = 'block';
+  if (val) {
+    display.textContent = val;
+    display.classList.add('has-content');
+  } else {
+    display.classList.remove('has-content');
+    const placeholders = {
+      current:   'Describe the current situation in measurable terms…',
+      future:    'Describe what success looks like in measurable terms…',
+      impact:    'Describe the business or customer impact if this problem is not addressed…',
+      scope:     'Describe who is affected, locations or products involved, when the problem was first observed, and how often it occurs…',
+      gathering: 'Add additional notes on your information gathering approach…',
+    };
+    display.textContent = placeholders[key] || '';
+  }
+}
+
+// ── GATHERING METHODS ──
+function renderMethodChips() {
+  const container = document.getElementById('methods-chips');
+  container.innerHTML = '';
+  GATHERING_METHODS.forEach(m => {
+    const active = selectedMethods.has(m);
+    const chip = document.createElement('button');
+    chip.style.cssText = `font-family:'Geist',sans-serif;font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all 0.15s;border:1px solid;${active ? 'background:var(--c1);color:#fff;border-color:var(--c1);' : 'background:transparent;color:var(--text3);border-color:var(--border2);'}`;
+    chip.textContent = m;
+    chip.onclick = () => {
+      if (selectedMethods.has(m)) selectedMethods.delete(m);
+      else selectedMethods.add(m);
+      renderMethodChips();
+      scheduleSave();
+    };
+    container.appendChild(chip);
+  });
+}
+
+// ── DATE RELATIVE ──
+function updateDateRelative() {
+  const val = document.getElementById('f-target-date').value;
+  const el  = document.getElementById('target-date-relative');
+  if (!val) { el.textContent = ''; return; }
+  const diff = Math.round((new Date(val + 'T00:00:00') - new Date()) / 86400000);
+  if (diff < 0)       el.textContent = `(${Math.abs(diff)} days ago)`;
+  else if (diff === 0) el.textContent = '(today)';
+  else                el.textContent = `(in ${diff} day${diff !== 1 ? 's' : ''})`;
+}
+document.getElementById('f-target-date').addEventListener('change', () => { updateDateRelative(); scheduleSave(); });
+
+// ── STATUS ──
+function cycleStatus() {
+  statusIdx = (statusIdx + 1) % STATUSES.length;
+  applyStatus();
+  scheduleSave();
+}
+function applyStatus() {
+  const s = STATUSES[statusIdx];
+  const chip = document.getElementById('doc-status-chip');
+  chip.className = 'status-chip ' + s.cls;
+  chip.innerHTML = `<span class="status-chip-dot"></span>${s.label}`;
+}
+
+// ── APPROVER ──
+function toggleApproverPopout() {
+  const p = document.getElementById('approver-popout');
+  if (p.style.display === 'block') { closeApproverPopout(); return; }
+  const cur = document.getElementById('approver-name').textContent;
+  document.getElementById('approver-input').value = cur === 'None' ? '' : cur;
+  p.style.display = 'block';
+  setTimeout(() => document.getElementById('approver-input').focus(), 50);
+}
+function closeApproverPopout() { document.getElementById('approver-popout').style.display = 'none'; }
+async function saveApprover() {
+  const name = document.getElementById('approver-input').value.trim();
+  document.getElementById('approver-name').textContent = name || 'None';
+  document.getElementById('approver-name').style.color = name ? 'var(--text)' : 'var(--text2)';
+  closeApproverPopout();
+  await sb.from('problem_statements').upsert({ id: PROJECT_ID, project_id: PROJECT_ID, approver: name || null, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  showToast('Approver updated');
+}
+async function clearApprover() {
+  document.getElementById('approver-input').value = '';
+  document.getElementById('approver-name').textContent = 'None';
+  document.getElementById('approver-name').style.color = 'var(--text2)';
+  closeApproverPopout();
+  await sb.from('problem_statements').upsert({ id: PROJECT_ID, project_id: PROJECT_ID, approver: null, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+}
+
+// ── BACK TO GRAPH ──
+function confirmBackToGraph() { document.getElementById('back-modal').style.display = 'flex'; }
+async function saveAndLeave() {
+  await saveAll();
+  window.location.href = 'index.html';
+}
+function exportDoc() { showToast('Export PDF coming soon'); }
+
+// ── KEYBOARD ──
+document.addEventListener('mousedown', e => {
+  if (!document.getElementById('approver-wrap').contains(e.target)) closeApproverPopout();
+  const fp = document.getElementById('gathering-filter-popout');
+  const fb = document.getElementById('gathering-filter-btn');
+  if (fp && !fp.contains(e.target) && !fb.contains(e.target)) fp.style.display = 'none';
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('back-modal').style.display = 'none';
+    closeApproverPopout();
+  }
+});
+
+// ── EXPOSE ──
+Object.assign(window, {
+  activateField, deactivateField, cycleStatus, confirmBackToGraph, saveAndLeave,
+  toggleApproverPopout, closeApproverPopout, saveApprover, clearApprover, exportDoc, scheduleSave,
+  addGatheringRow, updateGatheringRow, deleteGatheringRow, autoResizeTextarea,
+  toggleGatheringFilter, applyGatheringFilter, clearGatheringFilter,
+});
+
+// ── BOOT ──
+renderGatheringTable();
+loadAll();
+</script>
+</body>
+</html>
