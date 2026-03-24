@@ -1239,10 +1239,11 @@ function restoreFromData(data, bcPrefetched) {
     const isBC = n.title === 'Business Case';
     const isSR = n.title === 'Stakeholder Register';
     const isPS = n.title === 'Problem Statement';
+    const isPG = n.title === 'Project Goal';
     const el = document.createElement('div');
     el.className = 'node'; el.id = 'node-' + n.id;
     el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
-    if (isBC || isSR || isPS) el.style.borderColor = 'rgba(90,79,207,0.35)';
+    if (isBC || isSR || isPS || isPG) el.style.borderColor = 'rgba(90,79,207,0.35)';
     el.innerHTML = `
       <div class="node-top" style="background:${ph.color}"></div>
       <div class="node-body">
@@ -1265,6 +1266,11 @@ function restoreFromData(data, bcPrefetched) {
       <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openProblemStatement()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         Open Problem Statement
+      </button>` : ''}
+      ${isPG ? `
+      <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openProjectGoal()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Project Goal
       </button>` : ''}
       <div class="node-footer">
         <div style="display:flex;gap:4px;margin-left:auto">
@@ -1455,6 +1461,10 @@ function openStakeholderRegister() {
 
 function openProblemStatement() {
   window.location.href = 'Problem-Statement.html?id=' + BC_ID;
+}
+
+function openProjectGoal() {
+  window.location.href = 'project-goal.html?id=' + BC_ID;
 }
 
 // ── PHASE POPOUT MENU ──
@@ -2074,6 +2084,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   const isBC = nodeName === 'Business Case';
   const isSR = nodeName === 'Stakeholder Register';
   const isPS = nodeName === 'Problem Statement';
+  const isPG = nodeName === 'Project Goal';
 
   const el = document.createElement('div');
   el.className = 'node';
@@ -2081,7 +2092,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   el.style.left = x + 'px';
   el.style.top = y + 'px';
 
-  if (isBC || isSR || isPS) el.style.borderColor = 'rgba(90,79,207,0.35)';
+  if (isBC || isSR || isPS || isPG) el.style.borderColor = 'rgba(90,79,207,0.35)';
 
   el.innerHTML = `
     <div class="node-top" style="background:${ph.color}"></div>
@@ -2107,6 +2118,11 @@ function addNode(phaseIdx, x, y, silent, forceName) {
     <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openProblemStatement()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Open Problem Statement
+    </button>` : ''}
+    ${isPG ? `
+    <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openProjectGoal()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Project Goal
     </button>` : ''}
     <div class="node-footer">
       <div style="display:flex;gap:4px;margin-left:auto">
@@ -3246,7 +3262,7 @@ function updateCanvasTop() {
 
 // ── EXPOSE TO INLINE onclick HANDLERS (ES module scope) ──
 Object.assign(window, {
-  openBusinessCase, openStakeholderRegister, openProblemStatement, openPhaseMenu, pickNode, pickCustomNode,
+  openBusinessCase, openStakeholderRegister, openProblemStatement, openProjectGoal, openPhaseMenu, pickNode, pickCustomNode,
   saveOtherNodeModal, closeOtherNodeModal, saveCustomNodeModal, closeCustomNodeModal,
   openGateMenu, addGate, addCustomGate, approveGate, deleteGate,
   setProgress, autoLayout, zoom,
