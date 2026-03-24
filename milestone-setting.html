@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM.Train — Milestone Setting</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #ededef;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.11);
+    --text: #1a1a1f;
+    --text2: #6b6a68;
+    --text3: #a0a09e;
+    --accent: #5a4fcf;
+    --c1: #7c6fcd; --c1l: rgba(124,111,205,0.15);
+    --c2: #5a9e7a; --c2l: rgba(90,158,122,0.15);
+    --c3: #4a8bc4; --c3l: rgba(74,139,196,0.15);
+    --c4: #c4854a; --c4l: rgba(196,133,74,0.15);
+    --c5: #c03030; --c5l: rgba(192,48,48,0.10);
+    --radius: 10px;
+  }
+
+  body { font-family:'Geist',sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+  .topbar { height:48px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px; gap:16px; flex-shrink:0; z-index:100; }
+  .subbar { min-height:40px; max-height:80px; background:var(--bg3); border-bottom:1px solid var(--border2); display:flex; align-items:center; padding:8px 20px; gap:12px; flex-shrink:0; z-index:99; }
+  .topbar-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text3); letter-spacing:-0.2px; }
+  .topbar-sep { width:1px; height:20px; background:var(--border2); }
+  .topbar-project-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--text); letter-spacing:-0.5px; }
+  .topbar-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .subbar-actions { margin-left:auto; display:flex; gap:8px; }
+  .topbar-goal { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; font-style:italic; color:var(--accent); opacity:0.8; flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; line-height:1.5; }
+
+  .btn { font-family:'Geist',sans-serif; font-size:12px; padding:6px 14px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .btn:hover { background:var(--bg3); color:var(--text); }
+  .btn-primary { background:#1a1a1f; color:#fff; border-color:transparent; font-weight:500; }
+  .btn-primary:hover { background:#2e2e38; }
+  .btn-empty { font-family:'Geist',sans-serif; font-size:12px; padding:10px 18px; border-radius:6px; border:1px solid rgba(0,0,0,0.18); background:rgba(0,0,0,0.06); color:var(--text3); cursor:pointer; transition:all 0.15s; }
+  .btn-empty:hover { background:rgba(0,0,0,0.11); color:var(--text2); }
+
+  .page-body { flex:1; overflow-y:auto; padding:32px 40px 60px; }
+  .page-body::-webkit-scrollbar { width:6px; }
+  .page-body::-webkit-scrollbar-track { background:transparent; }
+  .page-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; gap:20px; }
+  .page-header-eyebrow { font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .page-header-title { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:var(--text); letter-spacing:-0.5px; }
+  .page-header-subtitle { font-size:13px; color:var(--text3); margin-top:6px; line-height:1.5; }
+  .page-header-actions { display:flex; flex-direction:column; gap:2px; flex-shrink:0; align-items:flex-end; }
+
+  /* ── METRICS ── */
+  .metrics-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .metric-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
+  .metric-label { font-size:9px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .metric-value { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text); letter-spacing:-0.5px; line-height:1; margin-bottom:4px; }
+  .metric-sub { font-size:11px; color:var(--text3); }
+
+  /* ── MILESTONE GRID ── */
+  .milestones-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px) { .milestones-grid { grid-template-columns:1fr; } }
+
+  /* ── MILESTONE CARD ── */
+  .milestone-card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius);
+    overflow:hidden; transition:box-shadow 0.15s, border-color 0.15s;
+    display:flex; flex-direction:column;
+  }
+  .milestone-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.07); border-color:var(--border2); }
+  .milestone-card-top {
+    display:flex; align-items:center; gap:10px;
+    padding:14px 16px 10px; border-bottom:1px solid var(--border);
+  }
+  .milestone-status-dot {
+    width:10px; height:10px; border-radius:50%; flex-shrink:0; border:2px solid;
+  }
+  .milestone-title-input {
+    font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:var(--text);
+    background:transparent; border:none; outline:none; flex:1; letter-spacing:-0.2px;
+  }
+  .milestone-title-input::placeholder { color:var(--text3); }
+  .milestone-delete-btn {
+    width:24px; height:24px; display:flex; align-items:center; justify-content:center;
+    border:none; background:transparent; cursor:pointer; color:var(--text3);
+    border-radius:5px; transition:all 0.12s; flex-shrink:0;
+  }
+  .milestone-delete-btn:hover { background:rgba(200,48,48,0.08); color:#c03030; }
+
+  .milestone-card-body { padding:12px 16px; display:flex; flex-direction:column; gap:10px; flex:1; }
+
+  .ms-field { display:flex; flex-direction:column; gap:4px; }
+  .ms-label { font-size:9px; font-weight:500; letter-spacing:0.09em; text-transform:uppercase; color:var(--text3); }
+  .ms-textarea {
+    font-family:'Geist',sans-serif; font-size:12px; color:var(--text);
+    background:var(--bg3); border:1px solid var(--border2); border-radius:6px;
+    padding:7px 9px; outline:none; resize:none; line-height:1.6; width:100%;
+    transition:border-color 0.15s;
+  }
+  .ms-textarea:focus { border-color:rgba(0,0,0,0.22); }
+  .ms-textarea::placeholder { color:var(--text3); font-style:italic; }
+  .ms-input {
+    font-family:'Geist',sans-serif; font-size:12px; color:var(--text);
+    background:var(--bg3); border:1px solid var(--border2); border-radius:6px;
+    padding:7px 9px; outline:none; width:100%; transition:border-color 0.15s;
+  }
+  .ms-input:focus { border-color:rgba(0,0,0,0.22); }
+  .ms-input::placeholder { color:var(--text3); }
+
+  .ms-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .milestone-card-footer { padding:10px 16px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+
+  /* Status selector */
+  .status-select {
+    font-family:'Geist',sans-serif; font-size:11px; font-weight:500;
+    padding:4px 10px; border-radius:20px; border:1px solid; cursor:pointer;
+    outline:none; appearance:none; background:transparent; letter-spacing:0.04em;
+    transition:all 0.15s;
+  }
+
+  /* Approval toggle */
+  .approval-toggle {
+    display:flex; align-items:center; gap:6px; font-size:11px;
+    color:var(--text3); cursor:pointer; user-select:none;
+  }
+  .toggle-switch {
+    width:28px; height:16px; border-radius:8px; background:var(--bg3);
+    border:1px solid var(--border2); position:relative; transition:background 0.2s;
+    flex-shrink:0; cursor:pointer;
+  }
+  .toggle-switch.on { background:var(--c1); border-color:var(--c1); }
+  .toggle-switch::after {
+    content:''; position:absolute; width:10px; height:10px; border-radius:50%;
+    background:#fff; top:2px; left:2px; transition:transform 0.2s;
+    box-shadow:0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle-switch.on::after { transform:translateX(12px); }
+
+  /* Status colours */
+  .s-not-started { background:var(--bg3); color:var(--text3); border-color:var(--border2); }
+  .s-in-progress  { background:var(--c3l); color:#185fa5; border-color:rgba(74,139,196,0.3); }
+  .s-complete     { background:var(--c2l); color:#2c7d52; border-color:rgba(90,158,122,0.3); }
+  .s-at-risk      { background:var(--c5l); color:#922020; border-color:rgba(192,48,48,0.25); }
+
+  /* Status dot colours */
+  .dot-not-started { background:var(--text3); border-color:var(--border2); }
+  .dot-in-progress  { background:#4a8bc4; border-color:#4a8bc4; }
+  .dot-complete     { background:#5a9e7a; border-color:#5a9e7a; }
+  .dot-at-risk      { background:#c03030; border-color:#c03030; }
+
+  /* Due date indicator */
+  .due-badge {
+    font-size:10px; color:var(--text3); display:flex; align-items:center; gap:4px;
+  }
+  .due-badge.overdue { color:#c03030; }
+  .due-badge.soon    { color:#c4854a; }
+  .due-badge.ok      { color:#5a9e7a; }
+
+  /* ── ADD CARD ── */
+  .add-milestone-card {
+    border:2px dashed var(--border2); border-radius:var(--radius);
+    padding:40px 20px; text-align:center; cursor:pointer;
+    transition:all 0.15s; display:flex; flex-direction:column;
+    align-items:center; gap:8px; color:var(--text3); min-height:160px; justify-content:center;
+  }
+  .add-milestone-card:hover { border-color:var(--accent); color:var(--accent); background:var(--c1l); }
+
+  /* ── STATUS CHIP ── */
+  .status-chip { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; padding:4px 10px; border-radius:20px; border:1px solid; }
+  .status-chip-dot { width:6px; height:6px; border-radius:50%; }
+  .status-draft    { background:var(--bg3); color:var(--text3); border-color:var(--border2); }
+  .status-draft .status-chip-dot { background:var(--text3); }
+  .status-review   { background:var(--c4l); color:#8c5a25; border-color:rgba(196,133,74,0.3); }
+  .status-review .status-chip-dot { background:var(--c4); }
+  .status-approved { background:var(--c2l); color:#2c7d52; border-color:rgba(90,158,122,0.3); }
+  .status-approved .status-chip-dot { background:var(--c2); }
+
+  #approver-wrap { position:relative; }
+
+  /* ── MODAL ── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.25); z-index:400; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+  .modal { background:#fff; border-radius:14px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.16); display:flex; flex-direction:column; gap:16px; }
+  .modal-header { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+  .modal-actions { display:flex; gap:8px; justify-content:space-between; margin-top:4px; }
+  .modal-cancel { font-family:'Geist',sans-serif; font-size:12px; padding:7px 16px; border-radius:7px; border:1px solid var(--border2); background:transparent; color:var(--text2); cursor:pointer; }
+  .modal-cancel:hover { background:var(--bg3); }
+  .modal-save { font-family:'Geist',sans-serif; font-size:12px; font-weight:500; padding:7px 16px; border-radius:7px; border:none; background:#1a1a1f; color:#fff; cursor:pointer; }
+  .modal-save:hover { background:#2e2e38; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-title">PM.Train</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-project-title" id="topbar-project-title">Project New Technology</span>
+  <div class="topbar-actions">
+    <span id="doc-status-chip" class="status-chip status-draft">
+      <span class="status-chip-dot"></span>Draft
+    </span>
+    <button class="btn" onclick="cycleStatus()">Change Status</button>
+    <button class="btn btn-primary" onclick="exportDoc()">Export PDF</button>
+  </div>
+</div>
+
+<!-- SUB BAR -->
+<div class="subbar">
+  <div class="topbar-goal" id="topbar-goal">The goal of this project.</div>
+  <div class="subbar-actions">
+    <button class="btn-empty" onclick="confirmBackToGraph()">← Back to Graph</button>
+  </div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-header-eyebrow">Project Initiation</div>
+      <div class="page-header-title">Milestone Setting</div>
+      <div class="page-header-subtitle">Define the critical checkpoints that mark significant progress and phase completions in your project.</div>
+    </div>
+    <div class="page-header-actions">
+      <span style="font-size:11px;color:var(--text3);">Last edited <strong id="last-edited" style="color:var(--text2);">—</strong></span>
+      <div id="approver-wrap">
+        <div onclick="toggleApproverPopout()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s;" onmouseenter="this.style.background='var(--bg3)';this.style.borderColor='var(--border2)';" onmouseleave="this.style.background='transparent';this.style.borderColor='transparent';">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Approver: <strong id="approver-name" style="color:var(--text2);">None</strong>
+        </div>
+        <div id="approver-popout" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border2);border-radius:10px;padding:14px;width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.13);z-index:200;">
+          <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">Assign Approver</div>
+          <input id="approver-input" type="text" placeholder="Enter approver name…" style="font-family:'Geist',sans-serif;font-size:13px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;outline:none;width:100%;" onkeydown="if(event.key==='Enter') saveApprover(); if(event.key==='Escape') closeApproverPopout();" />
+          <div style="display:flex;gap:6px;margin-top:12px;justify-content:flex-end;">
+            <button onclick="clearApprover()" style="font-family:'Geist',sans-serif;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;">Clear</button>
+            <button onclick="saveApprover()" style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;background:#1a1a1f;color:#fff;cursor:pointer;">Assign</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Total Milestones</div>
+      <div class="metric-value" id="m-total">—</div>
+      <div class="metric-sub">Defined</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Complete</div>
+      <div class="metric-value" id="m-complete" style="color:#5a9e7a">—</div>
+      <div class="metric-sub">Achieved</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">At Risk</div>
+      <div class="metric-value" id="m-risk" style="color:#c03030">—</div>
+      <div class="metric-sub">Need attention</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Approval Required</div>
+      <div class="metric-value" id="m-approval">—</div>
+      <div class="metric-sub">Formal sign-off needed</div>
+    </div>
+  </div>
+
+  <!-- Milestone Cards Grid -->
+  <div class="milestones-grid" id="milestones-grid">
+    <!-- Rendered by JS -->
+  </div>
+
+</div><!-- /page-body -->
+
+<!-- BACK TO GRAPH MODAL -->
+<div class="modal-overlay" id="back-modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="width:340px;" onclick="event.stopPropagation()">
+    <div class="modal-header">Return to Graph?</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-top:-4px;">Any unsaved changes will be lost.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('back-modal').style.display='none'">Stay here</button>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-cancel" style="color:#c03030;border-color:rgba(192,48,48,0.25);" onclick="window.location.href='index.html'">Discard</button>
+        <button class="modal-save" onclick="saveAndLeave()">Save &amp; Return</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const params = new URLSearchParams(window.location.search);
+const PROJECT_ID = params.get('id') || '00000000-0000-0000-0000-000000000001';
+
+// ── STATE ──
+let milestones  = [];
+let docStatusIdx = 0;
+let saveTimer   = null;
+
+const STATUSES = [
+  { key:'draft',    label:'Draft',      cls:'status-draft'    },
+  { key:'review',   label:'In Review',  cls:'status-review'   },
+  { key:'approved', label:'Approved',   cls:'status-approved' },
+];
+
+const MS_STATUSES = ['not-started','in-progress','complete','at-risk'];
+const MS_STATUS_LABELS = { 'not-started':'Not Started', 'in-progress':'In Progress', 'complete':'Complete', 'at-risk':'At Risk' };
+
+// ── TOAST ──
+function showToast(msg, type='ok') {
+  let t = document.getElementById('ms-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'ms-toast';
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:12px;font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.background = type==='error'?'#c03030':'#1a1a1f';
+  t.style.color='#fff'; t.style.opacity='1';
+  clearTimeout(t._t); t._t = setTimeout(()=>t.style.opacity='0', 2200);
+}
+
+// ── LOAD ──
+async function loadAll() {
+  const [msRes, projRes] = await Promise.all([
+    sb.from('milestones').select('*').eq('project_id', PROJECT_ID).order('due_date', { ascending: true, nullsFirst: false }),
+    sb.from('projects').select('title, goal').eq('id', PROJECT_ID).maybeSingle(),
+  ]);
+
+  if (projRes.data) {
+    if (projRes.data.title) document.getElementById('topbar-project-title').textContent = projRes.data.title;
+    if (projRes.data.goal)  document.getElementById('topbar-goal').textContent = projRes.data.goal;
+  }
+
+  // Load doc-level metadata
+  const { data: meta } = await sb.from('milestone_registers').select('*').eq('id', PROJECT_ID).maybeSingle();
+  if (meta) {
+    const idx = STATUSES.findIndex(s => s.key === meta.status);
+    if (idx > -1) { docStatusIdx = idx; applyDocStatus(); }
+    if (meta.approver) {
+      document.getElementById('approver-name').textContent = meta.approver;
+      document.getElementById('approver-name').style.color = 'var(--text)';
+    }
+    if (meta.updated_at) {
+      const d = new Date(meta.updated_at);
+      document.getElementById('last-edited').textContent = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    }
+  }
+
+  milestones = msRes.data || [];
+  renderAll();
+}
+
+// ── RENDER ──
+function renderAll() {
+  renderCards();
+  updateMetrics();
+}
+
+function renderCards() {
+  const grid = document.getElementById('milestones-grid');
+  grid.innerHTML = '';
+
+  // Sort by due date (nulls last)
+  const sorted = [...milestones].sort((a,b) => {
+    if (!a.due_date && !b.due_date) return 0;
+    if (!a.due_date) return 1;
+    if (!b.due_date) return -1;
+    return new Date(a.due_date) - new Date(b.due_date);
+  });
+
+  sorted.forEach(m => grid.appendChild(createCard(m)));
+
+  // Add card button
+  const addCard = document.createElement('div');
+  addCard.className = 'add-milestone-card';
+  addCard.onclick = addMilestone;
+  addCard.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <div style="font-size:12px;font-weight:500;">Add milestone</div>
+  `;
+  grid.appendChild(addCard);
+}
+
+function createCard(m) {
+  const status    = m.status || 'not-started';
+  const dotCls    = 'dot-' + status;
+  const statusCls = 's-' + status;
+  const dueBadge  = getDueBadge(m.due_date, status);
+
+  const card = document.createElement('div');
+  card.className = 'milestone-card';
+  card.dataset.id = m.id;
+
+  card.innerHTML = `
+    <div class="milestone-card-top">
+      <div class="milestone-status-dot ${dotCls}"></div>
+      <input class="milestone-title-input" type="text" placeholder="Milestone title…"
+        value="${escHtml(m.title||'')}"
+        onchange="updateField('${m.id}','title',this.value)"
+        oninput="scheduleSave()" />
+      <button class="milestone-delete-btn" onclick="deleteMilestone('${m.id}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="milestone-card-body">
+      <div class="ms-field">
+        <div class="ms-label">Description</div>
+        <textarea class="ms-textarea" rows="2" placeholder="What does achieving this milestone represent?"
+          onchange="updateField('${m.id}','description',this.value)"
+          oninput="autoResize(this)">${escHtml(m.description||'')}</textarea>
+      </div>
+      <div class="ms-field">
+        <div class="ms-label">Exit Criteria</div>
+        <textarea class="ms-textarea" rows="2" placeholder="What must be true to mark this milestone complete?"
+          onchange="updateField('${m.id}','exit_criteria',this.value)"
+          oninput="autoResize(this)">${escHtml(m.exit_criteria||'')}</textarea>
+      </div>
+      <div class="ms-row">
+        <div class="ms-field">
+          <div class="ms-label">Due Date</div>
+          <input class="ms-input" type="date" value="${m.due_date||''}"
+            onchange="updateField('${m.id}','due_date',this.value)" />
+        </div>
+        <div class="ms-field">
+          <div class="ms-label">Owner</div>
+          <input class="ms-input" type="text" placeholder="Responsible person"
+            value="${escHtml(m.owner||'')}"
+            onchange="updateField('${m.id}','owner',this.value)"
+            oninput="scheduleSave()" />
+        </div>
+      </div>
+    </div>
+
+    <div class="milestone-card-footer">
+      <select class="status-select ${statusCls}" onchange="updateStatus('${m.id}',this)">
+        ${MS_STATUSES.map(s => `<option value="${s}" class="s-${s}" ${s===status?'selected':''}>${MS_STATUS_LABELS[s]}</option>`).join('')}
+      </select>
+      <div class="approval-toggle" onclick="toggleApproval('${m.id}')">
+        <div class="toggle-switch ${m.approval_required ? 'on' : ''}" id="toggle-${m.id}"></div>
+        <span style="font-size:11px;color:${m.approval_required ? 'var(--c1)' : 'var(--text3)'};" id="toggle-label-${m.id}">
+          ${m.approval_required ? 'Approval required' : 'No approval needed'}
+        </span>
+      </div>
+      ${dueBadge}
+    </div>
+  `;
+
+  return card;
+}
+
+function getDueBadge(dueDate, status) {
+  if (!dueDate || status === 'complete') return '';
+  const diff = Math.round((new Date(dueDate) - new Date()) / 86400000);
+  let cls = 'ok', text = '';
+  if (diff < 0)       { cls = 'overdue'; text = `${Math.abs(diff)}d overdue`; }
+  else if (diff <= 7) { cls = 'soon';    text = `${diff}d left`; }
+  else                { cls = 'ok';      text = `${diff}d left`; }
+  return `<div class="due-badge ${cls}">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    ${text}
+  </div>`;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function autoResize(el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+
+// ── METRICS ──
+function updateMetrics() {
+  const total    = milestones.length;
+  const complete = milestones.filter(m => m.status === 'complete').length;
+  const atRisk   = milestones.filter(m => m.status === 'at-risk').length;
+  const approval = milestones.filter(m => m.approval_required).length;
+  document.getElementById('m-total').textContent    = total    || '—';
+  document.getElementById('m-complete').textContent = total ? complete : '—';
+  document.getElementById('m-risk').textContent     = total ? atRisk   : '—';
+  document.getElementById('m-approval').textContent = total ? approval : '—';
+}
+
+// ── ADD MILESTONE ──
+async function addMilestone() {
+  const { data, error } = await sb.from('milestones').insert({
+    project_id: PROJECT_ID, title: '', status: 'not-started', approval_required: false,
+  }).select().single();
+  if (error) { showToast('Failed to add milestone', 'error'); return; }
+  milestones.push(data);
+  renderAll();
+  touchRegister();
+  // Focus new card title
+  const card = document.querySelector(`[data-id="${data.id}"] .milestone-title-input`);
+  if (card) card.focus();
+}
+
+// ── UPDATE FIELD ──
+function updateField(id, field, value) {
+  const m = milestones.find(m => m.id === id);
+  if (m) m[field] = value;
+  scheduleSave(id, field, value);
+}
+
+function updateStatus(id, select) {
+  const status = select.value;
+  select.className = 'status-select s-' + status;
+  const m = milestones.find(m => m.id === id);
+  if (m) m.status = status;
+  // Update dot
+  const card = select.closest('.milestone-card');
+  const dot  = card?.querySelector('.milestone-status-dot');
+  if (dot) { dot.className = 'milestone-status-dot dot-' + status; }
+  scheduleSave(id, 'status', status);
+  updateMetrics();
+}
+
+function toggleApproval(id) {
+  const m = milestones.find(m => m.id === id);
+  if (!m) return;
+  m.approval_required = !m.approval_required;
+  const toggle = document.getElementById('toggle-' + id);
+  const label  = document.getElementById('toggle-label-' + id);
+  if (toggle) toggle.className = 'toggle-switch ' + (m.approval_required ? 'on' : '');
+  if (label)  { label.textContent = m.approval_required ? 'Approval required' : 'No approval needed'; label.style.color = m.approval_required ? 'var(--c1)' : 'var(--text3)'; }
+  scheduleSave(id, 'approval_required', m.approval_required);
+  updateMetrics();
+}
+
+// ── DELETE ──
+async function deleteMilestone(id) {
+  const m = milestones.find(m => m.id === id);
+  if (!m) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:24px;width:300px;box-shadow:0 16px 48px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#1a1a1f;">Remove milestone?</div>
+      <div style="font-size:13px;color:#6b6a68;line-height:1.55;"><strong>${escHtml(m.title||'Untitled')}</strong> will be permanently removed.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="del-cancel" style="font-family:'Geist',sans-serif;font-size:12px;padding:7px 16px;border-radius:7px;border:1px solid rgba(0,0,0,0.14);background:transparent;color:#6b6a68;cursor:pointer;">Cancel</button>
+        <button id="del-confirm" style="font-family:'Geist',sans-serif;font-size:12px;font-weight:500;padding:7px 16px;border-radius:7px;border:none;background:#c03030;color:#fff;cursor:pointer;">Remove</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('del-cancel').onclick  = () => overlay.remove();
+  document.getElementById('del-confirm').onclick = async () => {
+    overlay.remove();
+    const { error } = await sb.from('milestones').delete().eq('id', id);
+    if (error) { showToast('Delete failed', 'error'); return; }
+    milestones = milestones.filter(m => m.id !== id);
+    renderAll();
+    touchRegister();
+    showToast('Milestone removed');
+  };
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+// ── SAVE ──
+let saveQueue = {};
+function scheduleSave(id, field, value) {
+  if (id) saveQueue[id] = { ...(saveQueue[id]||{}), [field]: value };
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSaves, 600);
+}
+
+async function flushSaves() {
+  const tasks = Object.entries(saveQueue);
+  saveQueue = {};
+  await Promise.all(tasks.map(([id, fields]) =>
+    sb.from('milestones').update(fields).eq('id', id)
+  ));
+  touchRegister();
+}
+
+async function touchRegister() {
+  const now = new Date().toISOString();
+  document.getElementById('last-edited').textContent = 'just now';
+  await sb.from('milestone_registers')
+    .upsert({ id: PROJECT_ID, project_id: PROJECT_ID, status: STATUSES[docStatusIdx].key, updated_at: now }, { onConflict: 'id' });
+}
+
+async function saveAndLeave() {
+  await flushSaves();
+  window.location.href = 'index.html';
+}
+
+// ── DOC STATUS ──
+function cycleStatus() {
+  docStatusIdx = (docStatusIdx + 1) % STATUSES.length;
+  applyDocStatus();
+  touchRegister();
+}
+function applyDocStatus() {
+  const s = STATUSES[docStatusIdx];
+  const chip = document.getElementById('doc-status-chip');
+  chip.className = 'status-chip ' + s.cls;
+  chip.innerHTML = `<span class="status-chip-dot"></span>${s.label}`;
+}
+
+// ── APPROVER ──
+function toggleApproverPopout() {
+  const p = document.getElementById('approver-popout');
+  if (p.style.display==='block') { closeApproverPopout(); return; }
+  const cur = document.getElementById('approver-name').textContent;
+  document.getElementById('approver-input').value = cur==='None' ? '' : cur;
+  p.style.display='block';
+  setTimeout(() => document.getElementById('approver-input').focus(), 50);
+}
+function closeApproverPopout() { document.getElementById('approver-popout').style.display='none'; }
+async function saveApprover() {
+  const name = document.getElementById('approver-input').value.trim();
+  document.getElementById('approver-name').textContent = name||'None';
+  document.getElementById('approver-name').style.color = name ? 'var(--text)' : 'var(--text2)';
+  closeApproverPopout();
+  await sb.from('milestone_registers').upsert({ id:PROJECT_ID, project_id:PROJECT_ID, approver:name||null, updated_at:new Date().toISOString() }, { onConflict:'id' });
+  showToast('Approver updated');
+}
+async function clearApprover() {
+  document.getElementById('approver-input').value = '';
+  document.getElementById('approver-name').textContent = 'None';
+  document.getElementById('approver-name').style.color = 'var(--text2)';
+  closeApproverPopout();
+  await sb.from('milestone_registers').upsert({ id:PROJECT_ID, project_id:PROJECT_ID, approver:null, updated_at:new Date().toISOString() }, { onConflict:'id' });
+}
+
+// ── BACK ──
+function confirmBackToGraph() { document.getElementById('back-modal').style.display='flex'; }
+function exportDoc() { showToast('Export PDF coming soon'); }
+
+document.addEventListener('mousedown', e => {
+  if (!document.getElementById('approver-wrap').contains(e.target)) closeApproverPopout();
+});
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { document.getElementById('back-modal').style.display='none'; closeApproverPopout(); }
+});
+
+Object.assign(window, {
+  cycleStatus, confirmBackToGraph, saveAndLeave, exportDoc, scheduleSave,
+  toggleApproverPopout, closeApproverPopout, saveApprover, clearApprover,
+  addMilestone, updateField, updateStatus, toggleApproval, deleteMilestone, autoResize,
+});
+
+loadAll();
+</script>
+</body>
+</html>
