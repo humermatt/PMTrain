@@ -1240,10 +1240,11 @@ function restoreFromData(data, bcPrefetched) {
     const isSR = n.title === 'Stakeholder Register';
     const isPS = n.title === 'Problem Statement';
     const isPG = n.title === 'Project Goal';
+    const isMS = n.title === 'Milestone Setting';
     const el = document.createElement('div');
     el.className = 'node'; el.id = 'node-' + n.id;
     el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
-    if (isBC || isSR || isPS || isPG) el.style.borderColor = 'rgba(90,79,207,0.35)';
+    if (isBC || isSR || isPS || isPG || isMS) el.style.borderColor = 'rgba(90,79,207,0.35)';
     el.innerHTML = `
       <div class="node-top" style="background:${ph.color}"></div>
       <div class="node-body">
@@ -1271,6 +1272,11 @@ function restoreFromData(data, bcPrefetched) {
       <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openProjectGoal()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         Open Project Goal
+      </button>` : ''}
+      ${isMS ? `
+      <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openMilestoneSetting()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Milestone Setting
       </button>` : ''}
       <div class="node-footer">
         <div style="display:flex;gap:4px;margin-left:auto">
@@ -1465,6 +1471,10 @@ function openProblemStatement() {
 
 function openProjectGoal() {
   window.location.href = 'project-goal.html?id=' + BC_ID;
+}
+
+function openMilestoneSetting() {
+  window.location.href = 'milestone-setting.html?id=' + BC_ID;
 }
 
 // ── PHASE POPOUT MENU ──
@@ -2085,6 +2095,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   const isSR = nodeName === 'Stakeholder Register';
   const isPS = nodeName === 'Problem Statement';
   const isPG = nodeName === 'Project Goal';
+  const isMS = nodeName === 'Milestone Setting';
 
   const el = document.createElement('div');
   el.className = 'node';
@@ -2092,7 +2103,7 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   el.style.left = x + 'px';
   el.style.top = y + 'px';
 
-  if (isBC || isSR || isPS || isPG) el.style.borderColor = 'rgba(90,79,207,0.35)';
+  if (isBC || isSR || isPS || isPG || isMS) el.style.borderColor = 'rgba(90,79,207,0.35)';
 
   el.innerHTML = `
     <div class="node-top" style="background:${ph.color}"></div>
@@ -2124,9 +2135,12 @@ function addNode(phaseIdx, x, y, silent, forceName) {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Open Project Goal
     </button>` : ''}
+    ${isMS ? `
+    <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openMilestoneSetting()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Milestone Setting
+    </button>` : ''}
     <div class="node-footer">
-      <div style="display:flex;gap:4px;margin-left:auto">
-        <button class="node-edit" data-action="edit" data-id="${id}" title="Edit" onmousedown="event.stopPropagation()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -3262,7 +3276,7 @@ function updateCanvasTop() {
 
 // ── EXPOSE TO INLINE onclick HANDLERS (ES module scope) ──
 Object.assign(window, {
-  openBusinessCase, openStakeholderRegister, openProblemStatement, openProjectGoal, openPhaseMenu, pickNode, pickCustomNode,
+  openBusinessCase, openStakeholderRegister, openProblemStatement, openProjectGoal, openMilestoneSetting, openPhaseMenu, pickNode, pickCustomNode,
   saveOtherNodeModal, closeOtherNodeModal, saveCustomNodeModal, closeCustomNodeModal,
   openGateMenu, addGate, addCustomGate, approveGate, deleteGate,
   setProgress, autoLayout, zoom,
