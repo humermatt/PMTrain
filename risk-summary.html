@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM.Train — Risk Summary</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #ededef;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.11);
+    --text: #1a1a1f;
+    --text2: #6b6a68;
+    --text3: #a0a09e;
+    --accent: #5a4fcf;
+    --c1: #7c6fcd; --c1l: rgba(124,111,205,0.15);
+    --c2: #5a9e7a; --c2l: rgba(90,158,122,0.15);
+    --c3: #4a8bc4; --c3l: rgba(74,139,196,0.15);
+    --c4: #c4854a; --c4l: rgba(196,133,74,0.15);
+    --c5: #c03030; --c5l: rgba(192,48,48,0.10);
+    --radius: 10px;
+  }
+
+  body { font-family:'Geist',sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+  .topbar { height:48px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px; gap:16px; flex-shrink:0; z-index:100; }
+  .subbar { min-height:40px; max-height:80px; background:var(--bg3); border-bottom:1px solid var(--border2); display:flex; align-items:center; padding:8px 20px; gap:12px; flex-shrink:0; z-index:99; }
+  .topbar-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text3); letter-spacing:-0.2px; }
+  .topbar-sep { width:1px; height:20px; background:var(--border2); }
+  .topbar-project-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--text); letter-spacing:-0.5px; }
+  .topbar-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .subbar-actions { margin-left:auto; display:flex; gap:8px; }
+  .topbar-goal { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; font-style:italic; color:var(--accent); opacity:0.8; flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; line-height:1.5; }
+
+  .btn { font-family:'Geist',sans-serif; font-size:12px; padding:6px 14px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .btn:hover { background:var(--bg3); color:var(--text); }
+  .btn-primary { background:#1a1a1f; color:#fff; border-color:transparent; font-weight:500; }
+  .btn-primary:hover { background:#2e2e38; }
+  .btn-empty { font-family:'Geist',sans-serif; font-size:12px; padding:10px 18px; border-radius:6px; border:1px solid rgba(0,0,0,0.18); background:rgba(0,0,0,0.06); color:var(--text3); cursor:pointer; transition:all 0.15s; }
+  .btn-empty:hover { background:rgba(0,0,0,0.11); color:var(--text2); }
+
+  .page-body { flex:1; overflow-y:auto; padding:32px 40px 60px; }
+  .page-body::-webkit-scrollbar { width:6px; }
+  .page-body::-webkit-scrollbar-track { background:transparent; }
+  .page-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; gap:20px; }
+  .page-header-eyebrow { font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .page-header-title { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:var(--text); letter-spacing:-0.5px; }
+  .page-header-subtitle { font-size:13px; color:var(--text3); margin-top:6px; line-height:1.5; }
+  .page-header-actions { display:flex; flex-direction:column; gap:2px; flex-shrink:0; align-items:flex-end; }
+
+  /* ── METRICS ── */
+  .metrics-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .metric-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
+  .metric-label { font-size:9px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .metric-value { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text); letter-spacing:-0.5px; line-height:1; margin-bottom:4px; }
+  .metric-sub { font-size:11px; color:var(--text3); }
+
+  /* ── RISK GRID ── */
+  .risks-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px) { .risks-grid { grid-template-columns:1fr; } }
+
+  /* ── RISK CARD ── */
+  .risk-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:box-shadow 0.15s, border-color 0.15s; display:flex; flex-direction:column; }
+  .risk-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.07); border-color:var(--border2); }
+
+  /* Left accent bar based on rating */
+  .risk-card.rating-critical { border-left:3px solid #c03030; }
+  .risk-card.rating-high     { border-left:3px solid #c4854a; }
+  .risk-card.rating-medium   { border-left:3px solid #c4b44a; }
+  .risk-card.rating-low      { border-left:3px solid #5a9e7a; }
+
+  .risk-card-top { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; border-bottom:1px solid var(--border); }
+  .risk-title-input { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:var(--text); background:transparent; border:none; outline:none; flex:1; letter-spacing:-0.2px; }
+  .risk-title-input::placeholder { color:var(--text3); }
+  .risk-delete-btn { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; cursor:pointer; color:var(--text3); border-radius:5px; transition:all 0.12s; flex-shrink:0; }
+  .risk-delete-btn:hover { background:rgba(200,48,48,0.08); color:#c03030; }
+
+  .risk-card-body { padding:12px 16px; display:flex; flex-direction:column; gap:10px; flex:1; }
+
+  .r-field { display:flex; flex-direction:column; gap:4px; }
+  .r-label { font-size:9px; font-weight:500; letter-spacing:0.09em; text-transform:uppercase; color:var(--text3); }
+  .r-textarea { font-family:'Geist',sans-serif; font-size:12px; color:var(--text); background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:7px 9px; outline:none; resize:none; line-height:1.6; width:100%; transition:border-color 0.15s; }
+  .r-textarea:focus { border-color:rgba(0,0,0,0.22); }
+  .r-textarea::placeholder { color:var(--text3); font-style:italic; }
+  .r-select { font-family:'Geist',sans-serif; font-size:12px; color:var(--text); background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:7px 9px; outline:none; cursor:pointer; width:100%; transition:border-color 0.15s; }
+  .r-select:focus { border-color:rgba(0,0,0,0.22); }
+  .r-input { font-family:'Geist',sans-serif; font-size:12px; color:var(--text); background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:7px 9px; outline:none; width:100%; transition:border-color 0.15s; }
+  .r-input:focus { border-color:rgba(0,0,0,0.22); }
+  .r-input::placeholder { color:var(--text3); }
+  .r-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .r-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+  /* ── RISK RATING BADGE ── */
+  .rating-badge { display:inline-flex; align-items:center; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; padding:3px 10px; border-radius:20px; border:1px solid; }
+  .badge-critical { background:var(--c5l); color:#922020; border-color:rgba(192,48,48,0.25); }
+  .badge-high     { background:var(--c4l); color:#8c5a25; border-color:rgba(196,133,74,0.3); }
+  .badge-medium   { background:rgba(196,180,74,0.15); color:#7a6a10; border-color:rgba(196,180,74,0.3); }
+  .badge-low      { background:var(--c2l); color:#2c7d52; border-color:rgba(90,158,122,0.3); }
+
+  /* ── RISK CARD FOOTER ── */
+  .risk-card-footer { padding:10px 16px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+
+  .status-pill { font-family:'Geist',sans-serif; font-size:11px; font-weight:500; padding:4px 12px; border-radius:20px; border:1px solid; cursor:pointer; outline:none; appearance:none; background:transparent; letter-spacing:0.04em; transition:all 0.15s; }
+  .pill-open       { background:var(--c3l); color:#185fa5; border-color:rgba(74,139,196,0.3); }
+  .pill-mitigated  { background:var(--c2l); color:#2c7d52; border-color:rgba(90,158,122,0.3); }
+  .pill-closed     { background:var(--bg3); color:var(--text3); border-color:var(--border2); }
+  .pill-escalated  { background:var(--c5l); color:#922020; border-color:rgba(192,48,48,0.25); }
+
+  /* ── ADD CARD ── */
+  .add-risk-card { border:2px dashed var(--border2); border-radius:var(--radius); padding:40px 20px; text-align:center; cursor:pointer; transition:all 0.15s; display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text3); min-height:160px; justify-content:center; }
+  .add-risk-card:hover { border-color:var(--accent); color:var(--accent); background:var(--c1l); }
+
+  /* ── STATUS CHIP ── */
+  .status-chip { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; padding:4px 10px; border-radius:20px; border:1px solid; }
+  .status-chip-dot { width:6px; height:6px; border-radius:50%; }
+  .status-draft    { background:var(--bg3); color:var(--text3); border-color:var(--border2); }
+  .status-draft .status-chip-dot { background:var(--text3); }
+  .status-review   { background:var(--c4l); color:#8c5a25; border-color:rgba(196,133,74,0.3); }
+  .status-review .status-chip-dot { background:var(--c4); }
+  .status-approved { background:var(--c2l); color:#2c7d52; border-color:rgba(90,158,122,0.3); }
+  .status-approved .status-chip-dot { background:var(--c2); }
+
+  #approver-wrap { position:relative; }
+
+  /* ── MODAL ── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.25); z-index:400; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+  .modal { background:#fff; border-radius:14px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.16); display:flex; flex-direction:column; gap:16px; }
+  .modal-header { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+  .modal-actions { display:flex; gap:8px; justify-content:space-between; margin-top:4px; }
+  .modal-cancel { font-family:'Geist',sans-serif; font-size:12px; padding:7px 16px; border-radius:7px; border:1px solid var(--border2); background:transparent; color:var(--text2); cursor:pointer; }
+  .modal-cancel:hover { background:var(--bg3); }
+  .modal-save { font-family:'Geist',sans-serif; font-size:12px; font-weight:500; padding:7px 16px; border-radius:7px; border:none; background:#1a1a1f; color:#fff; cursor:pointer; }
+  .modal-save:hover { background:#2e2e38; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-title">PM.Train</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-project-title" id="topbar-project-title">Project New Technology</span>
+  <div class="topbar-actions">
+    <span id="doc-status-chip" class="status-chip status-draft">
+      <span class="status-chip-dot"></span>Draft
+    </span>
+    <button class="btn" onclick="cycleStatus()">Change Status</button>
+    <button class="btn btn-primary" onclick="exportDoc()">Export PDF</button>
+  </div>
+</div>
+
+<!-- SUB BAR -->
+<div class="subbar">
+  <div class="topbar-goal" id="topbar-goal">The goal of this project.</div>
+  <div class="subbar-actions">
+    <button class="btn-empty" onclick="confirmBackToGraph()">← Back to Graph</button>
+  </div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-header-eyebrow">Project Initiation</div>
+      <div class="page-header-title">Risk Summary</div>
+      <div class="page-header-subtitle">Identify, assess and define mitigation strategies for all project risks.</div>
+    </div>
+    <div class="page-header-actions">
+      <span style="font-size:11px;color:var(--text3);">Last edited <strong id="last-edited" style="color:var(--text2);">—</strong></span>
+      <div id="approver-wrap">
+        <div onclick="toggleApproverPopout()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s;" onmouseenter="this.style.background='var(--bg3)';this.style.borderColor='var(--border2)';" onmouseleave="this.style.background='transparent';this.style.borderColor='transparent';">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Approver: <strong id="approver-name" style="color:var(--text2);">None</strong>
+        </div>
+        <div id="approver-popout" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border2);border-radius:10px;padding:14px;width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.13);z-index:200;">
+          <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">Assign Approver</div>
+          <input id="approver-input" type="text" placeholder="Enter approver name…" style="font-family:'Geist',sans-serif;font-size:13px;color:var(--text);background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;outline:none;width:100%;" onkeydown="if(event.key==='Enter') saveApprover(); if(event.key==='Escape') closeApproverPopout();" />
+          <div style="display:flex;gap:6px;margin-top:12px;justify-content:flex-end;">
+            <button onclick="clearApprover()" style="font-family:'Geist',sans-serif;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;">Clear</button>
+            <button onclick="saveApprover()" style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;background:#1a1a1f;color:#fff;cursor:pointer;">Assign</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Total Risks</div>
+      <div class="metric-value" id="m-total">—</div>
+      <div class="metric-sub">Identified</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Critical</div>
+      <div class="metric-value" id="m-critical" style="color:#c03030">—</div>
+      <div class="metric-sub">Immediate attention</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Open</div>
+      <div class="metric-value" id="m-open" style="color:#4a8bc4">—</div>
+      <div class="metric-sub">Unresolved</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Mitigated</div>
+      <div class="metric-value" id="m-mitigated" style="color:#5a9e7a">—</div>
+      <div class="metric-sub">Under control</div>
+    </div>
+  </div>
+
+  <!-- Risk Cards Grid -->
+  <div class="risks-grid" id="risks-grid">
+    <!-- Rendered by JS -->
+  </div>
+
+</div><!-- /page-body -->
+
+<!-- BACK TO GRAPH MODAL -->
+<div class="modal-overlay" id="back-modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="width:340px;" onclick="event.stopPropagation()">
+    <div class="modal-header">Return to Graph?</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-top:-4px;">Any unsaved changes will be lost.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('back-modal').style.display='none'">Stay here</button>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-cancel" style="color:#c03030;border-color:rgba(192,48,48,0.25);" onclick="window.location.href='index.html'">Discard</button>
+        <button class="modal-save" onclick="saveAndLeave()">Save &amp; Return</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL  = 'https://bvzpoznolbnfehbsdghp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2enBvem5vbGJuZmVoYnNkZ2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzU3OTUsImV4cCI6MjA4OTUxMTc5NX0.otdWCZfDFUgK5nLJmXUPlXFbUhJbTuh3VnL2OD0TH_c';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const params = new URLSearchParams(window.location.search);
+const PROJECT_ID = params.get('id') || '00000000-0000-0000-0000-000000000001';
+
+// ── STATE ──
+let risks = [];
+let docStatusIdx = 0;
+let saveTimer    = null;
+let saveQueue    = {};
+
+const STATUSES = [
+  { key:'draft',    label:'Draft',      cls:'status-draft'    },
+  { key:'review',   label:'In Review',  cls:'status-review'   },
+  { key:'approved', label:'Approved',   cls:'status-approved' },
+];
+
+const CATEGORIES   = ['Technical','Financial','Resource','Schedule','External','Legal','Reputational','Other'];
+const LEVELS       = ['high','medium','low'];
+const RISK_STATUSES = ['open','mitigated','closed','escalated'];
+const RISK_STATUS_LABELS = { open:'Open', mitigated:'Mitigated', closed:'Closed', escalated:'Escalated' };
+
+// Rating matrix: likelihood × impact → rating
+function calcRating(likelihood, impact) {
+  if (!likelihood || !impact) return '';
+  const score = { high:3, medium:2, low:1 };
+  const s = score[likelihood] * score[impact];
+  if (s >= 9) return 'critical';
+  if (s >= 6) return 'high';
+  if (s >= 3) return 'medium';
+  return 'low';
+}
+
+// ── TOAST ──
+function showToast(msg, type='ok') {
+  let t = document.getElementById('rs-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'rs-toast';
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:12px;font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.background = type==='error'?'#c03030':'#1a1a1f';
+  t.style.color='#fff'; t.style.opacity='1';
+  clearTimeout(t._t); t._t = setTimeout(()=>t.style.opacity='0', 2200);
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── LOAD ──
+async function loadAll() {
+  const [risksRes, projRes] = await Promise.all([
+    sb.from('project_risks').select('*').eq('project_id', PROJECT_ID).order('created_at'),
+    sb.from('projects').select('title, goal').eq('id', PROJECT_ID).maybeSingle(),
+  ]);
+
+  if (projRes.data) {
+    if (projRes.data.title) document.getElementById('topbar-project-title').textContent = projRes.data.title;
+    if (projRes.data.goal)  document.getElementById('topbar-goal').textContent = projRes.data.goal;
+  }
+
+  const { data: meta } = await sb.from('risk_registers').select('*').eq('id', PROJECT_ID).maybeSingle();
+  if (meta) {
+    const idx = STATUSES.findIndex(s => s.key === meta.status);
+    if (idx > -1) { docStatusIdx = idx; applyDocStatus(); }
+    if (meta.approver) {
+      document.getElementById('approver-name').textContent = meta.approver;
+      document.getElementById('approver-name').style.color = 'var(--text)';
+    }
+    if (meta.updated_at) {
+      const d = new Date(meta.updated_at);
+      document.getElementById('last-edited').textContent = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    }
+  }
+
+  risks = risksRes.data || [];
+  renderAll();
+}
+
+// ── RENDER ──
+function renderAll() {
+  renderCards();
+  updateMetrics();
+}
+
+function renderCards() {
+  const grid = document.getElementById('risks-grid');
+  grid.innerHTML = '';
+
+  // Sort: critical first, then high, medium, low; then by created_at
+  const order = { critical:0, high:1, medium:2, low:3, '':4 };
+  const sorted = [...risks].sort((a,b) => {
+    const ra = calcRating(a.likelihood, a.impact);
+    const rb = calcRating(b.likelihood, b.impact);
+    return (order[ra]??4) - (order[rb]??4);
+  });
+
+  sorted.forEach(r => grid.appendChild(createCard(r)));
+
+  const addCard = document.createElement('div');
+  addCard.className = 'add-risk-card';
+  addCard.onclick = addRisk;
+  addCard.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <div style="font-size:12px;font-weight:500;">Add risk</div>
+  `;
+  grid.appendChild(addCard);
+}
+
+function createCard(r) {
+  const rating    = calcRating(r.likelihood, r.impact);
+  const statusCls = 'pill-' + (r.status || 'open');
+  const ratingCls = rating ? 'rating-' + rating : '';
+  const badgeCls  = rating ? 'badge-' + rating  : '';
+
+  const card = document.createElement('div');
+  card.className = 'risk-card ' + ratingCls;
+  card.dataset.id = r.id;
+
+  const categoryOptions = ['', ...CATEGORIES].map(c =>
+    `<option value="${c}" ${r.category===c?'selected':''}>${c||'— Category —'}</option>`
+  ).join('');
+  const levelOptions = (field) => ['', ...LEVELS].map(l =>
+    `<option value="${l}" ${r[field]===l?'selected':''}>${l ? l.charAt(0).toUpperCase()+l.slice(1) : '— Select —'}</option>`
+  ).join('');
+  const statusOptions = RISK_STATUSES.map(s =>
+    `<option value="${s}" ${(r.status||'open')===s?'selected':''}>${RISK_STATUS_LABELS[s]}</option>`
+  ).join('');
+
+  card.innerHTML = `
+    <div class="risk-card-top">
+      <input class="risk-title-input" type="text" placeholder="Risk title…"
+        value="${escHtml(r.title||'')}"
+        onchange="updateField('${r.id}','title',this.value)"
+        oninput="scheduleSave('${r.id}','title',this.value)" />
+      ${rating ? `<span class="rating-badge ${badgeCls}" id="rating-${r.id}">${rating.charAt(0).toUpperCase()+rating.slice(1)}</span>` : `<span class="rating-badge" id="rating-${r.id}" style="display:none"></span>`}
+      <button class="risk-delete-btn" onclick="deleteRisk('${r.id}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="risk-card-body">
+      <div class="r-field">
+        <div class="r-label">Description</div>
+        <textarea class="r-textarea" rows="2" placeholder="What is this risk?"
+          onchange="updateField('${r.id}','description',this.value)"
+          oninput="autoResize(this)">${escHtml(r.description||'')}</textarea>
+      </div>
+      <div class="r-row">
+        <div class="r-field">
+          <div class="r-label">Category</div>
+          <select class="r-select" onchange="updateField('${r.id}','category',this.value)">
+            ${categoryOptions}
+          </select>
+        </div>
+        <div class="r-field">
+          <div class="r-label">Owner</div>
+          <input class="r-input" type="text" placeholder="Risk owner"
+            value="${escHtml(r.owner||'')}"
+            onchange="updateField('${r.id}','owner',this.value)"
+            oninput="scheduleSave('${r.id}','owner',this.value)" />
+        </div>
+      </div>
+      <div class="r-row-3">
+        <div class="r-field">
+          <div class="r-label">Likelihood</div>
+          <select class="r-select" onchange="updateRating('${r.id}','likelihood',this.value)">
+            ${levelOptions('likelihood')}
+          </select>
+        </div>
+        <div class="r-field">
+          <div class="r-label">Impact</div>
+          <select class="r-select" onchange="updateRating('${r.id}','impact',this.value)">
+            ${levelOptions('impact')}
+          </select>
+        </div>
+        <div class="r-field" style="justify-content:flex-end;">
+          <div class="r-label">Rating</div>
+          <div id="rating-display-${r.id}" style="padding-top:6px;">
+            ${rating ? `<span class="rating-badge ${badgeCls}">${rating.charAt(0).toUpperCase()+rating.slice(1)}</span>` : '<span style="font-size:11px;color:var(--text3);">—</span>'}
+          </div>
+        </div>
+      </div>
+      <div class="r-field">
+        <div class="r-label">Mitigation Strategy</div>
+        <textarea class="r-textarea" rows="2" placeholder="How will this risk be reduced or managed?"
+          onchange="updateField('${r.id}','mitigation',this.value)"
+          oninput="autoResize(this)">${escHtml(r.mitigation||'')}</textarea>
+      </div>
+    </div>
+
+    <div class="risk-card-footer">
+      <select class="status-pill ${statusCls}" onchange="updateStatus('${r.id}',this)">
+        ${statusOptions}
+      </select>
+    </div>
+  `;
+
+  return card;
+}
+
+function autoResize(el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+
+// ── METRICS ──
+function updateMetrics() {
+  const total     = risks.length;
+  const critical  = risks.filter(r => calcRating(r.likelihood,r.impact) === 'critical').length;
+  const open      = risks.filter(r => (r.status||'open') === 'open').length;
+  const mitigated = risks.filter(r => r.status === 'mitigated').length;
+  document.getElementById('m-total').textContent    = total     || '—';
+  document.getElementById('m-critical').textContent = total ? critical  : '—';
+  document.getElementById('m-open').textContent     = total ? open      : '—';
+  document.getElementById('m-mitigated').textContent= total ? mitigated : '—';
+}
+
+// ── ADD RISK ──
+async function addRisk() {
+  const { data, error } = await sb.from('project_risks').insert({
+    project_id: PROJECT_ID, title:'', status:'open',
+  }).select().single();
+  if (error) { showToast('Failed to add risk','error'); return; }
+  risks.push(data);
+  renderAll();
+  touchRegister();
+  const input = document.querySelector(`[data-id="${data.id}"] .risk-title-input`);
+  if (input) input.focus();
+}
+
+// ── UPDATE FIELDS ──
+function updateField(id, field, value) {
+  const r = risks.find(r => r.id === id);
+  if (r) r[field] = value;
+  scheduleSave(id, field, value);
+}
+
+function updateRating(id, field, value) {
+  const r = risks.find(r => r.id === id);
+  if (r) r[field] = value;
+  scheduleSave(id, field, value);
+
+  // Update rating display inline
+  const rating   = calcRating(r?.likelihood, r?.impact);
+  const badgeCls = rating ? 'badge-' + rating : '';
+  const display  = document.getElementById('rating-display-' + id);
+  if (display) {
+    display.innerHTML = rating
+      ? `<span class="rating-badge ${badgeCls}">${rating.charAt(0).toUpperCase()+rating.slice(1)}</span>`
+      : '<span style="font-size:11px;color:var(--text3);">—</span>';
+  }
+  // Update card border class
+  const card = document.querySelector(`[data-id="${id}"]`);
+  if (card) {
+    card.classList.remove('rating-critical','rating-high','rating-medium','rating-low');
+    if (rating) card.classList.add('rating-' + rating);
+  }
+  updateMetrics();
+}
+
+function updateStatus(id, select) {
+  const status = select.value;
+  select.className = 'status-pill pill-' + status;
+  const r = risks.find(r => r.id === id);
+  if (r) r.status = status;
+  scheduleSave(id, 'status', status);
+  updateMetrics();
+}
+
+// ── DELETE ──
+async function deleteRisk(id) {
+  const r = risks.find(r => r.id === id);
+  if (!r) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:24px;width:300px;box-shadow:0 16px 48px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#1a1a1f;">Remove risk?</div>
+      <div style="font-size:13px;color:#6b6a68;line-height:1.55;"><strong>${escHtml(r.title||'Untitled')}</strong> will be permanently removed.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="del-cancel" style="font-family:'Geist',sans-serif;font-size:12px;padding:7px 16px;border-radius:7px;border:1px solid rgba(0,0,0,0.14);background:transparent;color:#6b6a68;cursor:pointer;">Cancel</button>
+        <button id="del-confirm" style="font-family:'Geist',sans-serif;font-size:12px;font-weight:500;padding:7px 16px;border-radius:7px;border:none;background:#c03030;color:#fff;cursor:pointer;">Remove</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('del-cancel').onclick  = () => overlay.remove();
+  document.getElementById('del-confirm').onclick = async () => {
+    overlay.remove();
+    const { error } = await sb.from('project_risks').delete().eq('id', id);
+    if (error) { showToast('Delete failed','error'); return; }
+    risks = risks.filter(r => r.id !== id);
+    renderAll();
+    touchRegister();
+    showToast('Risk removed');
+  };
+  overlay.onclick = e => { if (e.target===overlay) overlay.remove(); };
+}
+
+// ── SAVE ──
+function scheduleSave(id, field, value) {
+  if (id) saveQueue[id] = { ...(saveQueue[id]||{}), [field]: value };
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSaves, 600);
+}
+
+async function flushSaves() {
+  const tasks = Object.entries(saveQueue);
+  saveQueue = {};
+  await Promise.all(tasks.map(([id, fields]) =>
+    sb.from('project_risks').update(fields).eq('id', id)
+  ));
+  touchRegister();
+}
+
+async function touchRegister() {
+  const now = new Date().toISOString();
+  document.getElementById('last-edited').textContent = 'just now';
+  await sb.from('risk_registers')
+    .upsert({ id:PROJECT_ID, project_id:PROJECT_ID, status:STATUSES[docStatusIdx].key, updated_at:now }, { onConflict:'id' });
+}
+
+async function saveAndLeave() { await flushSaves(); window.location.href = 'index.html'; }
+
+// ── DOC STATUS ──
+function cycleStatus() { docStatusIdx=(docStatusIdx+1)%STATUSES.length; applyDocStatus(); touchRegister(); }
+function applyDocStatus() {
+  const s = STATUSES[docStatusIdx];
+  const chip = document.getElementById('doc-status-chip');
+  chip.className = 'status-chip ' + s.cls;
+  chip.innerHTML = `<span class="status-chip-dot"></span>${s.label}`;
+}
+
+// ── APPROVER ──
+function toggleApproverPopout() {
+  const p = document.getElementById('approver-popout');
+  if (p.style.display==='block') { closeApproverPopout(); return; }
+  const cur = document.getElementById('approver-name').textContent;
+  document.getElementById('approver-input').value = cur==='None'?'':cur;
+  p.style.display='block';
+  setTimeout(()=>document.getElementById('approver-input').focus(),50);
+}
+function closeApproverPopout() { document.getElementById('approver-popout').style.display='none'; }
+async function saveApprover() {
+  const name = document.getElementById('approver-input').value.trim();
+  document.getElementById('approver-name').textContent = name||'None';
+  document.getElementById('approver-name').style.color = name?'var(--text)':'var(--text2)';
+  closeApproverPopout();
+  await sb.from('risk_registers').upsert({ id:PROJECT_ID, project_id:PROJECT_ID, approver:name||null, updated_at:new Date().toISOString() },{ onConflict:'id' });
+  showToast('Approver updated');
+}
+async function clearApprover() {
+  document.getElementById('approver-input').value='';
+  document.getElementById('approver-name').textContent='None';
+  document.getElementById('approver-name').style.color='var(--text2)';
+  closeApproverPopout();
+  await sb.from('risk_registers').upsert({ id:PROJECT_ID, project_id:PROJECT_ID, approver:null, updated_at:new Date().toISOString() },{ onConflict:'id' });
+}
+
+// ── BACK ──
+function confirmBackToGraph() { document.getElementById('back-modal').style.display='flex'; }
+function exportDoc() { showToast('Export PDF coming soon'); }
+
+document.addEventListener('mousedown', e => {
+  if (!document.getElementById('approver-wrap').contains(e.target)) closeApproverPopout();
+});
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { document.getElementById('back-modal').style.display='none'; closeApproverPopout(); }
+});
+
+Object.assign(window, {
+  cycleStatus, confirmBackToGraph, saveAndLeave, exportDoc,
+  toggleApproverPopout, closeApproverPopout, saveApprover, clearApprover,
+  addRisk, updateField, updateRating, updateStatus, deleteRisk, autoResize, scheduleSave,
+});
+
+loadAll();
+</script>
+</body>
+</html>
