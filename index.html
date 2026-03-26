@@ -1242,10 +1242,11 @@ function restoreFromData(data, bcPrefetched) {
     const isPG = n.title === 'Project Goal';
     const isMS = n.title === 'Milestone Setting';
     const isRS = n.title === 'Risk Summary';
+    const isTRS = n.title === 'Team Role Summary';
     const el = document.createElement('div');
     el.className = 'node'; el.id = 'node-' + n.id;
     el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
-    if (isBC || isSR || isPS || isPG || isMS || isRS) el.style.borderColor = 'rgba(90,79,207,0.35)';
+    if (isBC || isSR || isPS || isPG || isMS || isRS || isTRS) el.style.borderColor = 'rgba(90,79,207,0.35)';
     el.innerHTML = `
       <div class="node-top" style="background:${ph.color}"></div>
       <div class="node-body">
@@ -1283,6 +1284,11 @@ function restoreFromData(data, bcPrefetched) {
       <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openRiskSummary()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         Open Risk Summary
+      </button>` : ''}
+      ${isTRS ? `
+      <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openTeamRoleSummary()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Team Role Summary
       </button>` : ''}
       <div class="node-footer">
         <div style="display:flex;gap:4px;margin-left:auto">
@@ -1485,6 +1491,10 @@ function openMilestoneSetting() {
 
 function openRiskSummary() {
   window.location.href = 'risk-summary.html?id=' + BC_ID;
+}
+
+function openTeamRoleSummary() {
+  window.location.href = 'team-role-summary.html?id=' + BC_ID;
 }
 
 // ── PHASE POPOUT MENU ──
@@ -2107,14 +2117,12 @@ function addNode(phaseIdx, x, y, silent, forceName) {
   const isPG = nodeName === 'Project Goal';
   const isMS = nodeName === 'Milestone Setting';
   const isRS = nodeName === 'Risk Summary';
+  const isTRS = nodeName === 'Team Role Summary';
 
   const el = document.createElement('div');
-  el.className = 'node';
-  el.id = 'node-' + id;
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
-
-  if (isBC || isSR || isPS || isPG || isMS || isRS) el.style.borderColor = 'rgba(90,79,207,0.35)';
+  el.className = 'node'; el.id = 'node-' + id;
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  if (isBC || isSR || isPS || isPG || isMS || isRS || isTRS) el.style.borderColor = 'rgba(90,79,207,0.35)';
 
   el.innerHTML = `
     <div class="node-top" style="background:${ph.color}"></div>
@@ -2155,6 +2163,11 @@ function addNode(phaseIdx, x, y, silent, forceName) {
     <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openRiskSummary()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Open Risk Summary
+    </button>` : ''}
+    ${isTRS ? `
+    <button class="node-bc-link" onmousedown="event.stopPropagation()" onclick="openTeamRoleSummary()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Team Role Summary
     </button>` : ''}
     <div class="node-footer">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3292,7 +3305,7 @@ function updateCanvasTop() {
 
 // ── EXPOSE TO INLINE onclick HANDLERS (ES module scope) ──
 Object.assign(window, {
-  openBusinessCase, openStakeholderRegister, openProblemStatement, openProjectGoal, openMilestoneSetting, openRiskSummary, openPhaseMenu, pickNode, pickCustomNode,
+  openBusinessCase, openStakeholderRegister, openProblemStatement, openProjectGoal, openMilestoneSetting, openRiskSummary, openTeamRoleSummary, openPhaseMenu, pickNode, pickCustomNode,
   saveOtherNodeModal, closeOtherNodeModal, saveCustomNodeModal, closeCustomNodeModal,
   openGateMenu, addGate, addCustomGate, approveGate, deleteGate,
   setProgress, autoLayout, zoom,
